@@ -6,13 +6,38 @@ import java.util.List;
 import java.util.UUID;
 
 public class Person {
-    public static List<UUID> ids = new ArrayList<>();
+    private static List<UUID> ids = new ArrayList<>();
 
-    private final UUID id;
-    private final String name;
-    private final YearMonth birth;
-    private final String location;
-    private final char gender; // 'm' for male, 'f' for female, 'd' for diverse
+    public static List<UUID> getIds() {
+        return ids;
+    }
+
+    private UUID id;
+    private String name;
+    private YearMonth birth;
+    private String location;
+    private char gender; // 'm' for male, 'f' for female, 'd' for diverse
+    private char group;
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setBirth(YearMonth birth) {
+        this.birth = birth;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public void setGender(char gender) {
+        this.gender = gender;
+    }
+
+    public void setGroup(char group) {
+        this.group = group;
+    }
 
     private final List<Person> preferences;
 
@@ -40,12 +65,17 @@ public class Person {
         return preferences;
     }
 
-    public Person(String name, YearMonth birth, String location, char gender, List<Person> preferences) {
+    public char getGroup() {
+        return group;
+    }
+
+    public Person(String name, YearMonth birth, String location, char gender, List<Person> preferences, char group) {
         this.name = name;
         this.birth = birth;
         this.location = location;
         this.gender = gender;
         this.preferences = preferences;
+        this.group = group;
         this.id = UUID.randomUUID();
         ids.add(this.id);
     }
