@@ -3,6 +3,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .kotlin
+src/main/resources/people.csv
+src/main/resources/rooms.csv
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

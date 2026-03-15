@@ -16,6 +16,22 @@ public class Config {
     private static double AGE_DIFFERENCE_THRESHOLD;
     private static double LARGE_AGE_DIFFERENCE_THRESHOLD;
 
+    public static void setDefaults() {
+        setPreferenceBonus(2.0);
+        setMutualPreferenceBonus(5.0);
+        setAgeDifferencePenalty(1.0);
+        setLargeAgeDifferencePenalty(2.0);
+        setSameLocationBonus(1.0);
+        setSameGenderBonus(2.0);
+
+        setLargeGroupBonus(0.0);
+        setUnderOccupancyPenalty(1.0);
+        setCriticalOccupancyPenalty(10.0);
+
+        setAgeDifferenceThreshold(2.0);
+        setLargeAgeDifferenceThreshold(3.0);
+    }
+
     public static double getPreferenceBonus() {
         return PREFERENCE_BONUS;
     }

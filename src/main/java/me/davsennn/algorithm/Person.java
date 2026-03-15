@@ -1,15 +1,45 @@
 package me.davsennn.algorithm;
 
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 public class Person {
-    private static List<UUID> ids = new ArrayList<>();
+    private static List<Person> people = new ArrayList<>();
 
-    public static List<UUID> getIds() {
-        return ids;
+    public static List<Person> getPeople() {
+        return people;
+    }
+
+    public static void addPeople(Collection<? extends Person> people) {
+        Person.people.addAll(people
+                            .stream()
+                            .filter(p -> !people.contains(p))
+                            .toList());
+        // prevent duplicates by name
+    }
+
+    public static void clearPeople() {
+        Person.people = new ArrayList<>();
+    }
+
+    public static Person fromName(String name) {
+        for (Person p : people) {
+            if (p.getName().equals(name))
+                return p;
+        }
+        return null;
+    }
+
+    public static String everyone() {
+        if (people.isEmpty()) return "[]";
+        StringBuilder ret = new StringBuilder(
+                "{name}, {birth}[MM YYYY], {location}, {gender}[\"f\"|\"m\"|\"d\"], {preferences}[\"[name1;name2; ...]\"\"], {group}\n");
+        for (Person p : people) ret.append(p.toString()).append("\n");
+        return ret.toString();
     }
 
     private UUID id;
@@ -18,6 +48,8 @@ public class Person {
     private String location;
     private char gender; // 'm' for male, 'f' for female, 'd' for diverse
     private char group;
+
+    private List<Person> preferences;
 
     public void setName(String name) {
         this.name = name;
@@ -35,11 +67,13 @@ public class Person {
         this.gender = gender;
     }
 
+    public void setPreferences(List<Person> preferences) {
+        this.preferences = preferences;
+    }
+
     public void setGroup(char group) {
         this.group = group;
     }
-
-    private final List<Person> preferences;
 
     public UUID getId() {
         return id;
@@ -77,11 +111,26 @@ public class Person {
         this.preferences = preferences;
         this.group = group;
         this.id = UUID.randomUUID();
-        ids.add(this.id);
+        people.add(this);
+        System.out.println(people.toArray().length);
     }
 
     public float ageDiffYears(YearMonth other) {
         return (this.birth.getYear() - other.getYear()) + (float) (this.birth.getMonthValue() - other.getMonthValue()) /12;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder prefstring = new StringBuilder("[");
+        for (Person p : preferences) {
+            prefstring.append(p.getName()).append(";");
+        }
+        if (prefstring.length() != 1) {
+            prefstring.deleteCharAt(prefstring.length() - 1);
+        }
+        prefstring.append("], ");
+        return name + ", " + birth.format(DateTimeFormatter.ofPattern("MM uuuu")) + ", " + location + ", " +
+                gender + ", " + prefstring.toString() + group;
     }
 
 
