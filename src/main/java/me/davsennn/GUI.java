@@ -90,7 +90,7 @@ public class GUI {
         buttons.setLayout(new GridLayout(1, 2, 10, 0));
 
         JButton defaults = new JButton("Zuruecksetzen");
-        defaults.addActionListener(e -> {
+        defaults.addActionListener(ignored -> {
             Config.setPreferenceBonus(2.0);
             Config.setMutualPreferenceBonus(5.0);
             Config.setAgeDifferencePenalty(1.0);
@@ -107,7 +107,7 @@ public class GUI {
         });
 
         JButton apply = new JButton("Anwenden");
-        apply.addActionListener(e -> {
+        apply.addActionListener(ignored -> {
             Config.setPreferenceBonus((double) preferenceSelector.getValue());
             Config.setMutualPreferenceBonus((double) mutualPreferenceSelector.getValue());
             Config.setAgeDifferencePenalty((double) ageDifferenceSelector.getValue());
