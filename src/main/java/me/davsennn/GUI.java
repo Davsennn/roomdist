@@ -275,7 +275,7 @@ public class GUI {
                 char genderv = gender.getText().charAt(0);
                 List<Person> preferencesv = new ArrayList<>();
                 for (String pref : preferences.getText().split(",")) {
-                    Person prefPerson = Person.fromName(pref);
+                    Person prefPerson = Person.fromName(pref.trim());
                     if (prefPerson == null) {
                         log(pref + " does not exist. This person was not added to preferences list of " + namev);
                         continue;
@@ -283,7 +283,7 @@ public class GUI {
                     preferencesv.add(prefPerson);
                 }
 
-                Person p = new Person(namev, birthv, locationv, genderv, preferencesv, groupv);
+                new Person(namev, birthv, locationv, genderv, preferencesv, groupv);
             } catch (Exception e) {
                 log("Insufficient information. \n Stacktrace \n" + e.getMessage());
             }
@@ -320,9 +320,7 @@ public class GUI {
         buttons.add(export);
 
         JButton viewAll = new JButton("View All");
-        viewAll.addActionListener(ignored -> {
-            log(Person.everyone());
-        });
+        viewAll.addActionListener(ignored -> log(Person.everyone()));
         buttons.add(viewAll);
 
         JButton deleteAll = new JButton("Delete All");
