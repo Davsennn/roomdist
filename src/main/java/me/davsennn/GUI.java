@@ -1,9 +1,12 @@
 package me.davsennn;
 
 import me.davsennn.algorithm.Person;
+import me.davsennn.algorithm.Room;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableModel;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
@@ -14,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,7 +33,7 @@ public class GUI {
 
     public static void createWindow() {
         fenster = new JFrame("roomdist Application 1.0.0");
-        fenster.setSize(800, 600);
+        fenster.setSize(1200, 900);
         fenster.setVisible(true);
         fenster.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         fenster.setLayout(new BorderLayout(10, 10));
@@ -188,6 +192,59 @@ public class GUI {
         peoplePage = new JPanel();
         peoplePage.setLayout(new BoxLayout(peoplePage, BoxLayout.PAGE_AXIS));
 
+        AbstractTableModel model = new AbstractTableModel() {
+            @Override
+            public int getRowCount() {
+                return Person.getPeople().size();
+            }
+
+            @Override
+            public int getColumnCount() {
+                return 6;
+            }
+
+            @Override
+            public String getColumnName(int col) {
+                return switch (col) {
+                    case 0 -> "Group";
+                    case 1 -> "Name";
+                    case 2 -> "Birth";
+                    case 3 -> "Gender";
+                    case 4 -> "Location";
+                    case 5 -> "Preferences";
+                    default -> null;
+                };
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return false;
+            }
+
+            @Override
+            public Object getValueAt(int rowIndex, int columnIndex) {
+                List<Person> people = Person.getPeople();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-uuuu");
+                return switch (columnIndex) {
+                    case 0 -> people.get(rowIndex).getGroup();
+                    case 1 -> people.get(rowIndex).getName();
+                    case 2 -> people.get(rowIndex).getBirth().format(formatter);
+                    case 3 -> people.get(rowIndex).getGender();
+                    case 4 -> people.get(rowIndex).getLocation();
+                    case 5 -> people.get(rowIndex).getPreferences().stream().map(Person::getName).toList().toString();
+                    default -> null;
+                };
+            }
+        };
+        JTable table = new JTable(model);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        table.getColumnModel().getColumn(0).setPreferredWidth(40);
+        table.getColumnModel().getColumn(1).setPreferredWidth(180);
+        table.getColumnModel().getColumn(2).setPreferredWidth(50);
+        table.getColumnModel().getColumn(3).setPreferredWidth(50);
+        table.getColumnModel().getColumn(4).setPreferredWidth(150);
+        table.getColumnModel().getColumn(5).setPreferredWidth(500);
+
         JPanel importPanel = new JPanel();
         JTextPane importText = immutableText("Import people from File");
         importText.setToolTipText("Import people data from CSV file. Format should be \n" +
@@ -203,12 +260,14 @@ public class GUI {
             int returnVal = importFileChooser.showOpenDialog(importPanel);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 Person.addPeople(Main.parse(importFileChooser.getSelectedFile()));
+                model.fireTableDataChanged();
             }
         });
         JButton test = new JButton("Test");
         test.addActionListener(ignored -> {
             File file = new File("C:\\Users\\david\\IdeaProjects\\roomdist\\src\\main\\resources\\people.csv");
             Person.addPeople(Main.parse(file));
+            model.fireTableDataChanged();
         });
 
         importPanel.add(browseButton);
@@ -284,6 +343,7 @@ public class GUI {
                 }
 
                 new Person(namev, birthv, locationv, genderv, preferencesv, groupv);
+                model.fireTableDataChanged();
             } catch (Exception e) {
                 log("Insufficient information. \n Stacktrace \n" + e.getMessage());
             }
@@ -342,10 +402,154 @@ public class GUI {
 
 
         peoplePage.add(buttons);
+        peoplePage.add(new JScrollPane(table));
     }
 
     private static void buildRoomsPage() {
         roomsPage = new JPanel();
+        roomsPage.setLayout(new BoxLayout(roomsPage, BoxLayout.PAGE_AXIS));
+
+        AbstractTableModel model = new AbstractTableModel() {
+            @Override
+            public int getRowCount() {
+                return Room.getRooms().size();
+            }
+
+            @Override
+            public int getColumnCount() {
+                return 2;
+            }
+
+            @Override
+            public String getColumnName(int col) {
+                return switch (col) {
+                    case 0 -> "RoomID";
+                    case 1 -> "Capacity";
+                    default -> null;
+                };
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return false;
+            }
+
+            @Override
+            public Object getValueAt(int rowIndex, int columnIndex) {
+                return switch (columnIndex) {
+                    case 0 -> Room.getRooms().get(rowIndex).getId();
+                    case 1 -> Room.getRooms().get(rowIndex).getCapacity();
+                    default -> null;
+                };
+            }
+        };
+        JTable table = new JTable(model);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        table.getColumnModel().getColumn(0).setPreferredWidth(250);
+        table.getColumnModel().getColumn(1).setPreferredWidth(60);
+
+        JPanel importPanel = new JPanel();
+        JTextPane importText = immutableText("Import rooms from File");
+        importText.setToolTipText("Import rooms data from CSV file. Format should be \n" +
+                "{RoomID},{Capacity}");
+        importPanel.add(importText);
+
+        JFileChooser importFileChooser = new JFileChooser();
+        FileNameExtensionFilter csvFilter = new FileNameExtensionFilter("CSV Spreadsheets", "csv");
+        importFileChooser.setFileFilter(csvFilter);
+
+        JButton browseButton = new JButton("Browse");
+        browseButton.addActionListener(ignored -> {
+            int returnVal = importFileChooser.showOpenDialog(importPanel);
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                Room.addRooms(Main.parseRooms(importFileChooser.getSelectedFile()));
+                model.fireTableDataChanged();
+            }
+        });
+        JButton test = new JButton("Test");
+        test.addActionListener(ignored -> {
+            File file = new File("C:\\Users\\david\\IdeaProjects\\roomdist\\src\\main\\resources\\rooms.csv");
+            Room.addRooms(Main.parseRooms(file));
+            model.fireTableDataChanged();
+        });
+        importPanel.add(browseButton);
+        importPanel.add(test);
+        roomsPage.add(importPanel);
+
+        JPanel manualPanel = new JPanel();
+        manualPanel.setLayout(new BoxLayout(manualPanel, BoxLayout.PAGE_AXIS));
+        manualPanel.setBackground(Color.LIGHT_GRAY);
+
+        JPanel roomIdPanel = new JPanel();
+        roomIdPanel.setBackground(Color.LIGHT_GRAY);
+        roomIdPanel.add(immutableText("RoomID"));
+        JTextArea roomId = new JTextArea();
+        roomId.setPreferredSize(new Dimension(100, 20));
+        roomIdPanel.add(roomId);
+        manualPanel.add(roomIdPanel);
+
+        JPanel capacityPanel = new JPanel();
+        capacityPanel.setBackground(Color.LIGHT_GRAY);
+        capacityPanel.add(immutableText("Capacity"));
+        JSpinner capacity = new JSpinner(new SpinnerNumberModel(5, 0, 30, 1));
+        capacityPanel.add(capacity);
+        manualPanel.add(capacityPanel);
+
+        JButton manualAdd = new JButton("Add");
+        manualAdd.addActionListener(ignored -> {
+            String roomIdv = roomId.getText().trim();
+            int capacityv = (int) capacity.getValue();
+            new Room(roomIdv, capacityv);
+            model.fireTableDataChanged();
+        });
+        manualPanel.add(manualAdd);
+
+        roomsPage.add(manualPanel);
+
+        JPanel buttons = new JPanel();
+        JButton export = new JButton("Export");
+        export.addActionListener(ignored -> {
+            JFileChooser saveFileChooser = new JFileChooser();
+            saveFileChooser.setFileFilter(csvFilter);
+            int returnValue = saveFileChooser.showSaveDialog(fenster);
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
+                try {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                    writer.write(Room.everywhere());
+                    writer.flush();
+                    writer.close();
+                } catch (IOException e) {
+                    JOptionPane.showConfirmDialog(fenster, "Failed to export data", "Warning",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        buttons.add(export);
+
+        JButton viewAll = new JButton("View All");
+        viewAll.addActionListener(ignored -> {log(Room.everywhere()); update();});
+        buttons.add(viewAll);
+
+        JButton deleteAll = new JButton("Delete All");
+        deleteAll.addActionListener(ignored -> {
+            int returnValue = JOptionPane.showConfirmDialog(fenster, "This will delete all rooms! Are you sure you want to proceed?",
+                    "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (returnValue == JOptionPane.YES_OPTION) {
+                Room.clearRooms();
+                model.fireTableDataChanged();
+            }
+        });
+        buttons.add(deleteAll);
+
+        JButton everyone = new JButton("Print all to console");
+        everyone.addActionListener(ignored -> {
+            System.out.println(Room.getRooms().toString());
+        });
+        buttons.add(everyone);
+
+        roomsPage.add(buttons);
+
+        roomsPage.add(new JScrollPane(table));
 
     }
 
