@@ -179,7 +179,7 @@ public class GUI {
             Config.setAgeDifferenceThreshold((double) ageDifferenceThresholdSelector.getValue());
             Config.setLargeAgeDifferenceThreshold((double) largeAgeDifferenceThresholdSelector.getValue());
 
-            log("Set parameters");
+            log("Parameters were set.");
         });
 
         buttons.add(defaults);
@@ -321,6 +321,7 @@ public class GUI {
         preferencePanel.add(immutableText("Preferences (\"name1, name2, name3, ...\")"));
         JTextArea preferences = new JTextArea();
         preferences.setPreferredSize(new Dimension(500, 40)); // why i need 40, dont know dont care
+        preferences.setLineWrap(true);
         preferencePanel.add(preferences);
         preferencePanel.setBackground(Color.LIGHT_GRAY);
 
@@ -445,7 +446,7 @@ public class GUI {
         };
         JTable table = new JTable(model);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        table.getColumnModel().getColumn(0).setPreferredWidth(250);
+        table.getColumnModel().getColumn(0).setPreferredWidth(150);
         table.getColumnModel().getColumn(1).setPreferredWidth(60);
 
         JPanel importPanel = new JPanel();
