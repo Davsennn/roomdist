@@ -90,22 +90,26 @@ public class GUI {
         // settingsPage.setBackground(Color.DARK_GRAY);
 
         JPanel pairParamSettings = new JPanel();
-        pairParamSettings.setLayout(new GridLayout(6, 3, 10, 5));
+        pairParamSettings.setLayout(new GridLayout(8, 3, 10, 5));
         // pairParamSettings.setBackground(Color.DARK_GRAY);
 
-        JSpinner preferenceSelector =         new JSpinner(new SpinnerNumberModel(Config.getPreferenceBonus()          , -999.0, 999.0, 0.5));
-        JSpinner mutualPreferenceSelector =   new JSpinner(new SpinnerNumberModel(Config.getMutualPreferenceBonus()    , -999.0, 999.0, 0.5));
-        JSpinner ageDifferenceSelector =      new JSpinner(new SpinnerNumberModel(Config.getAgeDifferencePenalty()     , -999.0, 999.0, 0.5));
-        JSpinner largeAgeDifferenceSelector = new JSpinner(new SpinnerNumberModel(Config.getLargeAgeDifferencePenalty(), -999.0, 999.0, 0.5));
-        JSpinner locationSelector =           new JSpinner(new SpinnerNumberModel(Config.getSameLocationBonus()        , -999.0, 999.0, 0.5));
-        JSpinner genderSelector =             new JSpinner(new SpinnerNumberModel(Config.getSameGenderBonus()          , -999.0, 999.0, 0.5));
+        JSpinner preferenceSelector =           new JSpinner(new SpinnerNumberModel(Config.getPreferenceBonus()             , -999.0, 999.0, 0.5));
+        JSpinner nonPreferenceSelector =        new JSpinner(new SpinnerNumberModel(Config.getNonPreferencePenalty()        , -999.0, 999.0, 0.5));
+        JSpinner unfulfilledPreferenceSelector =new JSpinner(new SpinnerNumberModel(Config.getUnfulfilledPreferencePenalty(), -999.0, 999.0, 0.5));
+        JSpinner mutualPreferenceSelector =     new JSpinner(new SpinnerNumberModel(Config.getMutualPreferenceBonus()       , -999.0, 999.0, 0.5));
+        JSpinner ageDifferenceSelector =        new JSpinner(new SpinnerNumberModel(Config.getAgeDifferencePenalty()        , -999.0, 999.0, 0.5));
+        JSpinner largeAgeDifferenceSelector =   new JSpinner(new SpinnerNumberModel(Config.getLargeAgeDifferencePenalty()   , -999.0, 999.0, 0.5));
+        JSpinner locationSelector =             new JSpinner(new SpinnerNumberModel(Config.getSameLocationBonus()           , -999.0, 999.0, 0.5));
+        JSpinner genderSelector =               new JSpinner(new SpinnerNumberModel(Config.getSameGenderBonus()             , -999.0, 999.0, 0.5));
 
-        pairParamSettings.add(immutableText("PREFERENCE BONUS"));            pairParamSettings.add(preferenceSelector);          pairParamSettings.add(immutableText("Pts"));
-        pairParamSettings.add(immutableText("MUTUAL PREFERENCE BONUS"));     pairParamSettings.add(mutualPreferenceSelector);    pairParamSettings.add(immutableText("Pts"));
-        pairParamSettings.add(immutableText("AGE DIFFERENCE PENALTY"));      pairParamSettings.add(ageDifferenceSelector);       pairParamSettings.add(immutableText("Pts per year of difference"));
-        pairParamSettings.add(immutableText("LARGE AGE DIFFERENCE PENALTY"));pairParamSettings.add(largeAgeDifferenceSelector);  pairParamSettings.add(immutableText("Pts per year of difference"));
-        pairParamSettings.add(immutableText("SAME LOCATION BONUS"));         pairParamSettings.add(locationSelector);            pairParamSettings.add(immutableText("Pts"));
-        pairParamSettings.add(immutableText("SAME GENDER BONUS"));           pairParamSettings.add(genderSelector);              pairParamSettings.add(immutableText("Pts"));
+        pairParamSettings.add(immutableText("PREFERENCE BONUS"));               pairParamSettings.add(preferenceSelector);          pairParamSettings.add(immutableText("Pts"));
+        pairParamSettings.add(immutableText("NON PREFERENCE PENALTY"));         pairParamSettings.add(nonPreferenceSelector);       pairParamSettings.add(immutableText("Pts"));
+        pairParamSettings.add(immutableText("UNFULFILLED PREFERENCE PENALTY")); pairParamSettings.add(unfulfilledPreferenceSelector);pairParamSettings.add(immutableText("Pts"));
+        pairParamSettings.add(immutableText("MUTUAL PREFERENCE BONUS"));        pairParamSettings.add(mutualPreferenceSelector);    pairParamSettings.add(immutableText("Pts"));
+        pairParamSettings.add(immutableText("AGE DIFFERENCE PENALTY"));         pairParamSettings.add(ageDifferenceSelector);       pairParamSettings.add(immutableText("Pts per year of difference"));
+        pairParamSettings.add(immutableText("LARGE AGE DIFFERENCE PENALTY"));   pairParamSettings.add(largeAgeDifferenceSelector);  pairParamSettings.add(immutableText("Pts per year of difference"));
+        pairParamSettings.add(immutableText("SAME LOCATION BONUS"));            pairParamSettings.add(locationSelector);            pairParamSettings.add(immutableText("Pts"));
+        pairParamSettings.add(immutableText("SAME GENDER BONUS"));              pairParamSettings.add(genderSelector);              pairParamSettings.add(immutableText("Pts"));
 
         settingsPage.add(pairParamSettings);
         settingsPage.add(Box.createVerticalStrut(20));
@@ -147,6 +151,8 @@ public class GUI {
             Config.setDefaults();
 
             preferenceSelector.setValue(2.0);
+            nonPreferenceSelector.setValue(1.0);
+            unfulfilledPreferenceSelector.setValue(4.0);
             mutualPreferenceSelector.setValue(5.0);
             ageDifferenceSelector.setValue(1.0);
             largeAgeDifferenceSelector.setValue(2.0);
@@ -166,6 +172,8 @@ public class GUI {
         JButton apply = new JButton("Apply");
         apply.addActionListener(ignored -> {
             Config.setPreferenceBonus((double) preferenceSelector.getValue());
+            Config.setNonPreferencePenalty((double) nonPreferenceSelector.getValue());
+            Config.setUnfulfilledPreferencePenalty((double) unfulfilledPreferenceSelector.getValue());
             Config.setMutualPreferenceBonus((double) mutualPreferenceSelector.getValue());
             Config.setAgeDifferencePenalty((double) ageDifferenceSelector.getValue());
             Config.setLargeAgeDifferencePenalty((double) largeAgeDifferenceSelector.getValue());
@@ -214,11 +222,6 @@ public class GUI {
                     case 5 -> "Preferences";
                     default -> null;
                 };
-            }
-
-            @Override
-            public boolean isCellEditable(int row, int col) {
-                return false;
             }
 
             @Override
@@ -431,11 +434,6 @@ public class GUI {
             }
 
             @Override
-            public boolean isCellEditable(int row, int col) {
-                return false;
-            }
-
-            @Override
             public Object getValueAt(int rowIndex, int columnIndex) {
                 return switch (columnIndex) {
                     case 0 -> Room.getRooms().get(rowIndex).getId();
@@ -543,9 +541,7 @@ public class GUI {
         buttons.add(deleteAll);
 
         JButton everyone = new JButton("Print all to console");
-        everyone.addActionListener(ignored -> {
-            System.out.println(Room.getRooms().toString());
-        });
+        everyone.addActionListener(ignored -> System.out.println(Room.getRooms().toString()));
         buttons.add(everyone);
 
         roomsPage.add(buttons);
@@ -557,5 +553,36 @@ public class GUI {
     private static void buildComputePage() {
         computePage = new JPanel();
 
+        JPanel computePanel = new JPanel();
+        JButton computeButton = new JButton("Berechnen");
+        computeButton.addActionListener(ignored -> Main.execute());
+        computePanel.add(computeButton);
+
+        JButton exportAllButton = new JButton("Export all");
+
+        computePanel.add(exportAllButton);
+
+        JButton exportButton = new JButton("Export");
+
+        computePanel.add(exportButton);
+
+        /*
+        JPanel displayPanel = new JPanel();
+        DefaultListModel<String> model = new DefaultListModel<>();
+        for (int i = 1; i <= Main.results.size(); ++i) {
+            model.addElement("Result #" + i + " ("+ Main.results.sequencedValues().toArray()[i - 1]);
+        }
+
+        JList<String> results = new JList<>(model);
+        results.getSelectionModel().setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
+
+        results.addListSelectionListener(ignored -> {
+
+        });
+        */
+
+
+
+        computePage.add(computePanel);
     }
 }

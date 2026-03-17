@@ -3,6 +3,8 @@ package me.davsennn;
 public class Config {
 
     private static double PREFERENCE_BONUS;
+    private static double NON_PREFERENCE_PENALTY;
+    private static double UNFULFILLED_PREFERENCE_PENALTY;
     private static double MUTUAL_PREFERENCE_BONUS;
     private static double AGE_DIFFERENCE_PENALTY;
     private static double LARGE_AGE_DIFFERENCE_PENALTY;
@@ -18,6 +20,8 @@ public class Config {
 
     public static void setDefaults() {
         setPreferenceBonus(2.0);
+        setNonPreferencePenalty(1.0);
+        setUnfulfilledPreferencePenalty(4.0);
         setMutualPreferenceBonus(5.0);
         setAgeDifferencePenalty(1.0);
         setLargeAgeDifferencePenalty(2.0);
@@ -38,6 +42,22 @@ public class Config {
 
     public static void setPreferenceBonus(double preferenceBonus) {
         PREFERENCE_BONUS = preferenceBonus;
+    }
+
+    public static double getNonPreferencePenalty() {
+        return NON_PREFERENCE_PENALTY;
+    }
+
+    public static void setNonPreferencePenalty(double nonPreferencePenalty) {
+        NON_PREFERENCE_PENALTY = nonPreferencePenalty;
+    }
+
+    public static double getUnfulfilledPreferencePenalty() {
+        return UNFULFILLED_PREFERENCE_PENALTY;
+    }
+
+    public static void setUnfulfilledPreferencePenalty(double unfulfilledPreferencePenalty) {
+        UNFULFILLED_PREFERENCE_PENALTY = unfulfilledPreferencePenalty;
     }
 
     public static double getMutualPreferenceBonus() {

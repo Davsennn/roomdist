@@ -10,19 +10,21 @@ import java.util.*;
 
 public class Main {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         Config.setDefaults();
         SwingUtilities.invokeLater(GUI::createWindow);
+    }
+
+    public static PriorityQueue<Result> resultPriorityQueue;
+    public static void execute() {
+        split(Person.getPeople(), Room.getRooms().size());
     }
 
     /**
      * Parses a CSV file to create a list of Person objects.
      * The CSV format is expected to be:
      * <pre>
-     * Name,Age,Group,Gender,Preferences
-     * Alice,25,Group1,true,[Bob;Charlie]
-     * Bob,30,Group2,false,[Alice]
-     * Charlie,22,Group1,false,[Bob]
+     * {name}, {birth}[MM YYYY], {location}, {gender}["f"|"m"|"d"], {preferences}["[name1;name2; ...]""], {group}
      * </pre>
      * @param csv the CSV file to parse
      * @return a list of Person objects created from the CSV data
@@ -148,21 +150,21 @@ public class Main {
      * Splits a list of persons into a specified number of groups.
      * Each group will contain a sublist of persons.
      *
-     * @param list the list of persons to split
+     * @param list   the list of persons to split
      * @param groups the number of groups to create
-     * @return Each List<List<Person>> represents a possible grouping of the input list into the specified number of groups.
      */
-    public static List<List<List<Person>>> split(List<Person> list, int groups) {
+    public static void split(List<Person> list, int groups) {
         if (groups <= 0)
             throw new IllegalArgumentException("Invalid number of groups: " + groups);
+        resultPriorityQueue = new PriorityQueue<>(11, Comparator.comparingDouble(a -> a.score));
         List<List<List<Person>>> result = new ArrayList<>();
         int n = list.size();
         int[] assignment = new int[n];
-        splitHelper(list, groups, 0, assignment, result);
-        return result;
+        splitHelper(list, groups, 0, assignment);
     }
 
-    private static void splitHelper(List<Person> list, int groups, int idx, int[] assignment, List<List<List<Person>>> result) {
+    static int counted = 0;
+    private static void splitHelper(List<Person> list, int groups, int idx, int[] assignment) {
         if (idx == list.size()) {
             // Build the partition from the assignment
             List<List<Person>> partition = new ArrayList<>();
@@ -172,12 +174,21 @@ public class Main {
             for (int i = 0; i < list.size(); i++) {
                 partition.get(assignment[i]).add(list.get(i));
             }
-            result.add(partition);
+            double score = Person.calculateOptimality(partition, null);
+            resultPriorityQueue.add(new Result(partition, score));
+            counted++;
+            if (resultPriorityQueue.size() >= 11) {
+                resultPriorityQueue.remove();
+            }
+            Result r = resultPriorityQueue.poll();
+            if (r != null && (score != Double.NEGATIVE_INFINITY && score >= r.score - 10))
+                System.out.println(counted + ":" + score + ":" + partition);
+
             return;
         }
         for (int g = 0; g < groups; g++) {
             assignment[idx] = g;
-            splitHelper(list, groups, idx + 1, assignment, result);
+            splitHelper(list, groups, idx + 1, assignment);
         }
     }
 }

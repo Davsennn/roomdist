@@ -1,11 +1,10 @@
 package me.davsennn.algorithm;
 
+import me.davsennn.Config;
+
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class Person {
     private static List<Person> people = new ArrayList<>();
@@ -42,7 +41,7 @@ public class Person {
         return ret.toString();
     }
 
-    private UUID id;
+    private final UUID id;
     private String name;
     private YearMonth birth;
     private String location;
@@ -119,6 +118,14 @@ public class Person {
         return (this.birth.getYear() - other.getYear()) + (float) (this.birth.getMonthValue() - other.getMonthValue()) /12;
     }
 
+    public boolean prefers(Person other) {
+        return preferences.contains(other);
+    }
+
+    public boolean mutualPreference(Person other) {
+        return prefers(other) && other.prefers(this);
+    }
+
     @Override
     public String toString() {
         StringBuilder prefstring = new StringBuilder("[");
@@ -130,8 +137,69 @@ public class Person {
         }
         prefstring.append("], ");
         return name + ", " + birth.format(DateTimeFormatter.ofPattern("MM uuuu")) + ", " + location + ", " +
-                gender + ", " + prefstring.toString() + group;
+                gender + ", " + prefstring + group;
     }
 
+    public static double calculatePreferenceScore(List<Person> ppl, Map<Person[], Double> custom_bonuses) {
+        if (!(Config.getPreferenceBonus() >= 0)) {
+            Config.setDefaults();
+        }
+        if (ppl == null || ppl.size() < 2) {
+            throw new NullPointerException("Persons cannot be null for preference score calculation.");
+        }
+        if (ppl.size() >= 14)
+            return Double.NEGATIVE_INFINITY;
 
+        double score = 0.0;
+        Person oldest = null;
+        Person youngest = null;
+
+        for (Person p : ppl) {
+            List<Person> preferences = new ArrayList<>(p.getPreferences());
+
+            for (Person q : ppl) {
+                preferences.remove(q);
+
+                if (p.equals(q)) continue; // Skip self-comparison
+                if (p.prefers(q))                               score += Config.getPreferenceBonus();
+                else                                            score -= Config.getNonPreferencePenalty(); // Penalize non-preference
+                if (p.mutualPreference(q))                      score += Config.getMutualPreferenceBonus() / 2;
+                if (p.getLocation().equals(q.getLocation()))    score += Config.getSameLocationBonus();
+                if (p.getGender() == q.getGender())             score += Config.getSameGenderBonus();
+
+
+
+                if (custom_bonuses != null && custom_bonuses.containsKey(new Person[]{p, q})) {
+                    score += custom_bonuses.get(new Person[]{p, q});
+                }
+
+                if (oldest == null || oldest.getBirth().isAfter(p.getBirth())) oldest = p;
+                if (youngest == null || youngest.getBirth().isBefore(p.getBirth())) youngest = p;
+            }
+
+            score -= preferences.size() * Config.getUnfulfilledPreferencePenalty(); // Penalize for unfulfilled preferences
+        }
+        assert oldest != null;
+        double ageDiff = oldest.ageDiffYears(youngest.getBirth());
+        if (ageDiff >= Config.getAgeDifferenceThreshold())          score -= ageDiff * Config.getAgeDifferencePenalty();
+        if (ageDiff >= Config.getLargeAgeDifferenceThreshold())     score -= ageDiff * Config.getLargeAgeDifferencePenalty();
+
+        score /= (ppl.size() * (ppl.size() - 1)); // Normalize score by number of comparisons
+        return score;
+    }
+
+    public static double calculateOptimality(List<List<Person>> groups, Map<Person[], Double> custom_bonuses) {
+        if (groups == null || groups.isEmpty()) {
+            throw new NullPointerException("Groups cannot be null or empty for optimality calculation.");
+        }
+        double totalScore = 0.0;
+        for (List<Person> group : groups) {
+            // Room room = Room.chooseRoom(group);
+            // totalScore += room != null ? room.calculateGroupOptimality(group, custom_bonuses) : 0;
+            int room = Room.chooseRoom(group.size());
+            if (room == -1) return Double.NEGATIVE_INFINITY;
+            totalScore += Room.calculateOptimality(group, room);
+        }
+        return totalScore;
+    }
 }
