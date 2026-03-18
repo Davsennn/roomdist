@@ -11,6 +11,23 @@ public class Room {
     }
     // availableRooms.get(capacity) return how many rooms of specified capacity are left
     public static TreeMap<Integer, Integer> availableRooms = new TreeMap<>();
+    private static int maxCapacity;
+    public static int getMaxCapacity() {
+        return maxCapacity;
+    }
+    public static void finish() {
+        maxCapacity = rooms.stream()
+                .map(Room::getCapacity)
+                .max(Integer::compareTo)
+                .orElse(Integer.MAX_VALUE);
+    }
+    public static void resetAvailableRooms() {
+        availableRooms = new TreeMap<>();
+        for (Room r : rooms) {
+            Room.availableRooms.merge(r.getCapacity(), 1, Integer::sum);
+        }
+    }
+
 
     public static void addRooms(Collection<? extends Room> rooms) {
         Room.rooms.addAll(rooms
@@ -40,34 +57,10 @@ public class Room {
         return ret.toString();
     }
 
-    public static Room chooseRoom(List<Person> ppl) {
-        int groupSize = ppl.size();
-        // 1. Exact match
-        for (Room room : rooms) {
-            if (room.getCapacity() == groupSize) {
-                return room;
-            }
-        }
-        // 3. Room with least extra capacity (capacity >= groupSize)
-        Room bestFit = null;
-        int minExtra = Integer.MAX_VALUE;
-        for (Room room : rooms) {
-            int extra = room.getCapacity() - groupSize;
-            if (extra >= 0 && extra < minExtra) {
-                minExtra = extra;
-                bestFit = room;
-            }
-        }
-        if (bestFit != null) {
-            return bestFit;
-        }
-        // 4. Any room (fallback)
-        return rooms.isEmpty() ? null : rooms.getFirst();
-    }
-
     public static int chooseRoom(int groupSize) {
-        return groupSize;
-        /*
+        if (groupSize == 0) return 0;
+        //return groupSize;
+
         Integer key;
 
         // exact match
@@ -82,7 +75,6 @@ public class Room {
         if (key != null) return key;
 
         return -1;
-        */
     }
 
     private static Integer getAndDecrement(TreeMap<Integer, Integer> map, Integer key) {

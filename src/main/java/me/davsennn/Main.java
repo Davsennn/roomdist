@@ -13,11 +13,115 @@ public class Main {
     static void main(String[] args) {
         Config.setDefaults();
         SwingUtilities.invokeLater(GUI::createWindow);
+        System.out.println(Double.compare(12, 6));
     }
 
+    static long processed = 0;
     public static PriorityQueue<Result> resultPriorityQueue;
+    public static Result[] results;
+    static long startTime;
+    static long endTime;
     public static void execute() {
-        split(Person.getPeople(), Room.getRooms().size());
+        startTime = System.nanoTime();
+        // split(Person.getPeople(), Room.getRooms().size());
+        Room.finish();
+        resultPriorityQueue = new PriorityQueue<>(11, (a, b) -> 2*Double.compare(a.score, b.score) - a.id.compareTo(b.id));
+        System.out.println("Starting...");
+        assignRoom(0, Person.getPeople(), new ArrayList<>(), 0);
+        endTime = System.nanoTime();
+        System.out.println("Execution stopped. "
+                + String.format("%,d", processed) + " Paths processed, "
+                + String.format("%,d", (endTime - startTime)/1000000L) + "ms elapsed + "
+                + String.format("%,d", (endTime - startTime)%1000000L) + "ns");
+        System.out.println("TOP 10");
+        results = resultPriorityQueue.toArray(new Result[10]);
+        Arrays.sort(results, Comparator.comparingDouble(r -> r.score));
+        for (int i = results.length - 1; i >= 0; --i) {
+            System.out.println(((double)((int)(results[i].score*100)))/100 + " | " + results[i]);
+        }
+    }
+
+    static void assignRoom(int roomIdx,
+                           List<Person> remaining,
+                           List<List<Person>> current,
+                           double currentScore) {
+
+        if (currentScore == Double.NEGATIVE_INFINITY) return;
+
+
+        if (roomIdx == Room.getRooms().size() || remaining.isEmpty()) {
+            if (remaining.isEmpty()) {
+                resultPriorityQueue.add(new Result(new ArrayList<>(current), Person.calculateOptimality(current)));
+                if (resultPriorityQueue.size() >= 11) {
+                    resultPriorityQueue.remove();
+                }
+                /*
+                System.out.println("---------------------------");
+                System.out.println("FINISHED");
+                Result r = resultPriorityQueue.peek();
+                if (r != null)
+                    System.out.println(r.score + " | " + r.toString());
+
+                for (Result r : resultPriorityQueue) {
+                    System.out.println(((double)((int)(r.score*100)))/100 + " | " + r);
+                }
+                 */
+            }
+
+            return;
+        }
+
+        Room room = Room.getRooms().get(roomIdx);
+
+        // build this room's group
+        buildGroup(roomIdx, room, remaining, 0,
+                new ArrayList<>(), current, currentScore);
+    }
+
+    static void buildGroup(int roomIdx,
+                           Room room,
+                           List<Person> remaining,
+                           int start,
+                           List<Person> group,
+                           List<List<Person>> current,
+                           double currentScore) {
+
+        int size = group.size();
+
+
+        // --- IF GROUP SIZE IS USABLE ---
+        if (size >= room.getCapacity() - 1 &&
+                size <= room.getCapacity() + 1) {
+
+            double fullScore = Room.calculateOptimality(group, room.getCapacity());
+            double newScore = currentScore + fullScore;
+
+            // recurse to next room
+            current.add(new ArrayList<>(group));
+
+            List<Person> newRemaining = new ArrayList<>(remaining);
+            newRemaining.removeAll(group);
+            processed++;
+            if (processed % 1000000 == 0) {
+                double s = Person.calculateOptimality(current);
+                System.out.println("D" + roomIdx + " | " + processed + " | " + s + " | " + Result.toString(current));
+            }
+            assignRoom(roomIdx + 1, newRemaining, current, newScore);
+
+            current.removeLast();
+        }
+
+        // --- STOP IF TOO BIG ---
+        if (size >= room.getCapacity() + 1) return;
+
+        // --- EXTEND GROUP ---
+        for (int i = start; i < remaining.size(); i++) {
+            Person p = remaining.get(i);
+
+            group.add(p);
+            buildGroup(roomIdx, room, remaining, i + 1, group, current, currentScore);
+            group.removeLast();
+        }
     }
 
     /**
@@ -30,7 +134,7 @@ public class Main {
      * @return a list of Person objects created from the CSV data
      * @throws IllegalArgumentException if the CSV format is invalid
      */
-    public static List<Person> parse(File csv) {
+    public static List<Person> parsePeople(File csv) {
         if (csv == null || !csv.exists() || !csv.isFile()) {
             throw new IllegalArgumentException("CSV file does not exist or is not a valid file");
         }
@@ -146,49 +250,4 @@ public class Main {
         return rooms;
     }
 
-    /**
-     * Splits a list of persons into a specified number of groups.
-     * Each group will contain a sublist of persons.
-     *
-     * @param list   the list of persons to split
-     * @param groups the number of groups to create
-     */
-    public static void split(List<Person> list, int groups) {
-        if (groups <= 0)
-            throw new IllegalArgumentException("Invalid number of groups: " + groups);
-        resultPriorityQueue = new PriorityQueue<>(11, Comparator.comparingDouble(a -> a.score));
-        List<List<List<Person>>> result = new ArrayList<>();
-        int n = list.size();
-        int[] assignment = new int[n];
-        splitHelper(list, groups, 0, assignment);
-    }
-
-    static int counted = 0;
-    private static void splitHelper(List<Person> list, int groups, int idx, int[] assignment) {
-        if (idx == list.size()) {
-            // Build the partition from the assignment
-            List<List<Person>> partition = new ArrayList<>();
-            for (int i = 0; i < groups; i++) {
-                partition.add(new ArrayList<>());
-            }
-            for (int i = 0; i < list.size(); i++) {
-                partition.get(assignment[i]).add(list.get(i));
-            }
-            double score = Person.calculateOptimality(partition, null);
-            resultPriorityQueue.add(new Result(partition, score));
-            counted++;
-            if (resultPriorityQueue.size() >= 11) {
-                resultPriorityQueue.remove();
-            }
-            Result r = resultPriorityQueue.poll();
-            if (r != null && (score != Double.NEGATIVE_INFINITY && score >= r.score - 10))
-                System.out.println(counted + ":" + score + ":" + partition);
-
-            return;
-        }
-        for (int g = 0; g < groups; g++) {
-            assignment[idx] = g;
-            splitHelper(list, groups, idx + 1, assignment);
-        }
-    }
 }

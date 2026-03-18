@@ -20,9 +20,9 @@ public class Config {
 
     public static void setDefaults() {
         setPreferenceBonus(2.0);
-        setNonPreferencePenalty(1.0);
+        setNonPreferencePenalty(0.5);
         setUnfulfilledPreferencePenalty(4.0);
-        setMutualPreferenceBonus(5.0);
+        setMutualPreferenceBonus(10.0);
         setAgeDifferencePenalty(1.0);
         setLargeAgeDifferencePenalty(2.0);
         setSameLocationBonus(1.0);

@@ -1,12 +1,12 @@
 package me.davsennn;
 
 import me.davsennn.algorithm.Person;
+import me.davsennn.algorithm.Result;
 import me.davsennn.algorithm.Room;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableModel;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
@@ -150,21 +150,21 @@ public class GUI {
         defaults.addActionListener(ignored -> {
             Config.setDefaults();
 
-            preferenceSelector.setValue(2.0);
-            nonPreferenceSelector.setValue(1.0);
-            unfulfilledPreferenceSelector.setValue(4.0);
-            mutualPreferenceSelector.setValue(5.0);
-            ageDifferenceSelector.setValue(1.0);
-            largeAgeDifferenceSelector.setValue(2.0);
-            locationSelector.setValue(1.0);
-            genderSelector.setValue(2.0);
+            preferenceSelector.setValue(Config.getPreferenceBonus());
+            nonPreferenceSelector.setValue(Config.getNonPreferencePenalty());
+            unfulfilledPreferenceSelector.setValue(Config.getUnfulfilledPreferencePenalty());
+            mutualPreferenceSelector.setValue(Config.getMutualPreferenceBonus());
+            ageDifferenceSelector.setValue(Config.getAgeDifferencePenalty());
+            largeAgeDifferenceSelector.setValue(Config.getLargeAgeDifferencePenalty());
+            locationSelector.setValue(Config.getSameLocationBonus());
+            genderSelector.setValue(Config.getSameGenderBonus());
 
-            largeGroupSelector.setValue(0.0);
-            underoccupancySelector.setValue(1.0);
-            criticalOccupancySelector.setValue(10.0);
+            largeGroupSelector.setValue(Config.getLargeGroupBonus());
+            underoccupancySelector.setValue(Config.getUnderOccupancyPenalty());
+            criticalOccupancySelector.setValue(Config.getCriticalOccupancyPenalty());
 
-            ageDifferenceThresholdSelector.setValue(2.0);
-            largeAgeDifferenceThresholdSelector.setValue(3.0);
+            ageDifferenceThresholdSelector.setValue(Config.getAgeDifferenceThreshold());
+            largeAgeDifferenceThresholdSelector.setValue(Config.getLargeAgeDifferenceThreshold());
 
             log("Reset to defaults");
         });
@@ -262,14 +262,14 @@ public class GUI {
         browseButton.addActionListener(ignored -> {
             int returnVal = importFileChooser.showOpenDialog(importPanel);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
-                Person.addPeople(Main.parse(importFileChooser.getSelectedFile()));
+                Person.addPeople(Main.parsePeople(importFileChooser.getSelectedFile()));
                 model.fireTableDataChanged();
             }
         });
         JButton test = new JButton("Test");
         test.addActionListener(ignored -> {
             File file = new File("C:\\Users\\david\\IdeaProjects\\roomdist\\src\\main\\resources\\people.csv");
-            Person.addPeople(Main.parse(file));
+            Person.addPeople(Main.parsePeople(file));
             model.fireTableDataChanged();
         });
 
@@ -550,39 +550,81 @@ public class GUI {
 
     }
 
+    static DefaultListModel<String> model = new DefaultListModel<>();
+    static JList<String> resultsList = new JList<>(model);
+    static AbstractTableModel dataModel = new AbstractTableModel() {
+        @Override
+        public int getRowCount() {
+            if (Main.results == null) return 0;
+            if (resultsList.getSelectedIndex() == -1) return 0;
+            return Main.results[resultsList.getSelectedIndex()].config.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return 2;
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            return switch (columnIndex) {
+                case 0 ->                     Main.results[9-resultsList.getSelectedIndex()].config.get(rowIndex).size();
+                case 1 -> Result.toStringList(Main.results[9-resultsList.getSelectedIndex()].config.get(rowIndex));
+                default -> "";
+            };
+        }
+
+        @Override
+        public String getColumnName(int columnIndex) {
+            return switch (columnIndex) {
+                case 0 -> "Size";
+                case 1 -> "Occupants";
+                default -> "";
+            };
+        }
+    };
     private static void buildComputePage() {
         computePage = new JPanel();
+        computePage.setLayout(new BoxLayout(computePage, BoxLayout.PAGE_AXIS));
 
-        JPanel computePanel = new JPanel();
-        JButton computeButton = new JButton("Berechnen");
-        computeButton.addActionListener(ignored -> Main.execute());
-        computePanel.add(computeButton);
+        JPanel buttonPanel = new JPanel();
+        JButton computeButton = new JButton("Compute");
+        computeButton.addActionListener(ignored -> {
+            Main.execute();
+            constructDisplay();
+        });
+        buttonPanel.add(computeButton);
 
         JButton exportAllButton = new JButton("Export all");
 
-        computePanel.add(exportAllButton);
+        buttonPanel.add(exportAllButton);
 
         JButton exportButton = new JButton("Export");
 
-        computePanel.add(exportButton);
+        buttonPanel.add(exportButton);
 
-        /*
+
         JPanel displayPanel = new JPanel();
-        DefaultListModel<String> model = new DefaultListModel<>();
-        for (int i = 1; i <= Main.results.size(); ++i) {
-            model.addElement("Result #" + i + " ("+ Main.results.sequencedValues().toArray()[i - 1]);
+
+        resultsList.getSelectionModel().setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
+        resultsList.addListSelectionListener(ignored -> dataModel.fireTableDataChanged());
+        displayPanel.add(resultsList);
+
+        JTable resultsTable = new JTable(dataModel);
+        resultsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        resultsTable.getColumnModel().getColumn(0).setPreferredWidth(40);
+        resultsTable.getColumnModel().getColumn(1).setPreferredWidth(800);
+        JScrollPane tableScrollPane = new JScrollPane(resultsTable);
+        tableScrollPane.setPreferredSize(new Dimension(850, 500));
+        displayPanel.add(tableScrollPane);
+
+        computePage.add(buttonPanel);
+        computePage.add(displayPanel);
+    }
+    static void constructDisplay() {
+        model.clear();
+        for (int i = 1; i <= Main.results.length; ++i) {
+            model.addElement("Result #" + i + " ("+ ((double)((int)(Main.results[10-i].score*100)))/100 + ")");
         }
-
-        JList<String> results = new JList<>(model);
-        results.getSelectionModel().setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
-
-        results.addListSelectionListener(ignored -> {
-
-        });
-        */
-
-
-
-        computePage.add(computePanel);
     }
 }

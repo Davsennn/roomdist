@@ -102,6 +102,10 @@ public class Person {
         return group;
     }
 
+    public int compareTo(Person other) {
+        return getId().compareTo(other.getId());
+    }
+
     public Person(String name, YearMonth birth, String location, char gender, List<Person> preferences, char group) {
         this.name = name;
         this.birth = birth;
@@ -111,7 +115,6 @@ public class Person {
         this.group = group;
         this.id = UUID.randomUUID();
         people.add(this);
-        System.out.println(people.toArray().length);
     }
 
     public float ageDiffYears(YearMonth other) {
@@ -145,9 +148,9 @@ public class Person {
             Config.setDefaults();
         }
         if (ppl == null || ppl.size() < 2) {
-            throw new NullPointerException("Persons cannot be null for preference score calculation.");
+            return 0;
         }
-        if (ppl.size() >= 14)
+        if (ppl.size() >= Room.getMaxCapacity())
             return Double.NEGATIVE_INFINITY;
 
         double score = 0.0;
@@ -183,11 +186,11 @@ public class Person {
         if (ageDiff >= Config.getAgeDifferenceThreshold())          score -= ageDiff * Config.getAgeDifferencePenalty();
         if (ageDiff >= Config.getLargeAgeDifferenceThreshold())     score -= ageDiff * Config.getLargeAgeDifferencePenalty();
 
-        score /= (ppl.size() * (ppl.size() - 1)); // Normalize score by number of comparisons
+        score /= (ppl.size() - 1); // Normalize score by number of comparisons
         return score;
     }
 
-    public static double calculateOptimality(List<List<Person>> groups, Map<Person[], Double> custom_bonuses) {
+    public static double calculateOptimality(List<List<Person>> groups) {
         if (groups == null || groups.isEmpty()) {
             throw new NullPointerException("Groups cannot be null or empty for optimality calculation.");
         }
@@ -199,6 +202,7 @@ public class Person {
             if (room == -1) return Double.NEGATIVE_INFINITY;
             totalScore += Room.calculateOptimality(group, room);
         }
+        Room.resetAvailableRooms();
         return totalScore;
     }
 }
