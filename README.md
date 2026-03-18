@@ -7,5 +7,6 @@ Better: catch `Double.NEGATIVE_INFINITY` results for individual rooms, immediate
 </br>
 TODO: 
 - Fix `chooseRoom` to reset for each chonfig.
-- Early prune `Double.NEGATIVE_INFINITY` room configs
-- Prune differently-ordered but already explored paths (Search unordered, maybe use HashSet)
+- Find better way to generate possible groupings. THEN:
+  - Early prune `Double.NEGATIVE_INFINITY` room configs
+  - Prune differently-ordered but already explored paths (Search unordered, maybe use HashSet)
