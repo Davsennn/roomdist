@@ -161,12 +161,11 @@ public class Person {
                 preferences.remove(q);
 
                 if (p.equals(q)) continue; // Skip self-comparison
-                if (p.prefers(q))                               score += Config.getPreferenceBonus();
-                else                                            score -= Config.getNonPreferencePenalty(); // Penalize non-preference
                 if (p.mutualPreference(q))                      score += Config.getMutualPreferenceBonus() / 2;
+                else if (p.prefers(q))                          score += Config.getPreferenceBonus();
+                else                                            score -= Config.getNonPreferencePenalty(); // Penalize non-preference
                 if (p.getLocation().equals(q.getLocation()))    score += Config.getSameLocationBonus();
                 if (p.getGender() == q.getGender())             score += Config.getSameGenderBonus();
-
 
 
                 if (custom_bonuses != null && custom_bonuses.containsKey(new Person[]{p, q})) {
