@@ -2,21 +2,23 @@ package me.davsennn;
 
 public class Config {
 
-    private static double PREFERENCE_BONUS;
-    private static double NON_PREFERENCE_PENALTY;
-    private static double UNFULFILLED_PREFERENCE_PENALTY;
-    private static double MUTUAL_PREFERENCE_BONUS;
-    private static double AGE_DIFFERENCE_PENALTY;
-    private static double LARGE_AGE_DIFFERENCE_PENALTY;
-    private static double SAME_LOCATION_BONUS;
-    private static double SAME_GENDER_BONUS;
+    private static double   PREFERENCE_BONUS;
+    private static double   NON_PREFERENCE_PENALTY;
+    private static double   UNFULFILLED_PREFERENCE_PENALTY;
+    private static double   MUTUAL_PREFERENCE_BONUS;
+    private static double   AGE_DIFFERENCE_PENALTY;
+    private static double   LARGE_AGE_DIFFERENCE_PENALTY;
+    private static double   SAME_LOCATION_BONUS;
+    private static double   SAME_GENDER_BONUS;
 
-    private static double LARGE_GROUP_BONUS;
-    private static double CRITICAL_OCCUPANCY_PENALTY;
-    private static double UNDER_OCCUPANCY_PENALTY;
+    private static double   LARGE_GROUP_BONUS;
+    private static double   CRITICAL_OCCUPANCY_PENALTY;
+    private static double   UNDER_OCCUPANCY_PENALTY;
 
-    private static double AGE_DIFFERENCE_THRESHOLD;
-    private static double LARGE_AGE_DIFFERENCE_THRESHOLD;
+    private static double   AGE_DIFFERENCE_THRESHOLD;
+    private static double   LARGE_AGE_DIFFERENCE_THRESHOLD;
+    private static int      LARGE_GROUP_SIZE_THRESHOLD;
+    private static double   LARGE_GROUP_AGE_LIMIT;
 
     public static void setDefaults() {
         setPreferenceBonus(2.0);
@@ -29,11 +31,13 @@ public class Config {
         setSameGenderBonus(2.0);
 
         setLargeGroupBonus(0.0);
-        setUnderOccupancyPenalty(1.0);
+        setUnderoccupancyPenalty(1.0);
         setCriticalOccupancyPenalty(10.0);
 
         setAgeDifferenceThreshold(2.0);
         setLargeAgeDifferenceThreshold(3.0);
+        setLargeGroupSizeThreshold(4);
+        setLargeGroupAgeLimit(10.0);
     }
 
     public static double getPreferenceBonus() {
@@ -120,7 +124,7 @@ public class Config {
         return UNDER_OCCUPANCY_PENALTY;
     }
 
-    public static void setUnderOccupancyPenalty(double underOccupancyPenalty) {
+    public static void setUnderoccupancyPenalty(double underOccupancyPenalty) {
         UNDER_OCCUPANCY_PENALTY = underOccupancyPenalty;
     }
 
@@ -140,6 +144,22 @@ public class Config {
     public static void setLargeAgeDifferenceThreshold(double largeAgeDifferenceThreshold) {
         if (largeAgeDifferenceThreshold < 0) return;
         LARGE_AGE_DIFFERENCE_THRESHOLD = largeAgeDifferenceThreshold;
+    }
+
+    public static int getLargeGroupSizeThreshold() {
+        return LARGE_GROUP_SIZE_THRESHOLD;
+    }
+
+    public static void setLargeGroupSizeThreshold(int largeGroupSizeThreshold) {
+        LARGE_GROUP_SIZE_THRESHOLD = largeGroupSizeThreshold;
+    }
+
+    public static double getLargeGroupAgeLimit() {
+        return LARGE_GROUP_AGE_LIMIT;
+    }
+
+    public static void setLargeGroupAgeLimit(double largeGroupAgeLimit) {
+        LARGE_GROUP_AGE_LIMIT = largeGroupAgeLimit;
     }
 
 }

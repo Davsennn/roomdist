@@ -31,6 +31,8 @@ public class GUI {
     private static JPanel roomsPage;
     private static JPanel computePage;
 
+    private static final FileNameExtensionFilter csvFilter = new FileNameExtensionFilter("CSV Spreadsheets", "csv");
+
     public static void createWindow() {
         fenster = new JFrame("roomdist Application 1.0.0");
         fenster.setSize(1200, 900);
@@ -130,14 +132,18 @@ public class GUI {
         settingsPage.add(Box.createVerticalStrut(20));
 
         JPanel ageSettings = new JPanel();
-        ageSettings.setLayout(new GridLayout(2, 3, 10, 5));
+        ageSettings.setLayout(new GridLayout(4, 3, 10, 5));
         // ageSettings.setBackground(Color.DARK_GRAY);
 
         JSpinner ageDifferenceThresholdSelector = new JSpinner(new SpinnerNumberModel(Config.getAgeDifferenceThreshold(), 0, 999.0, 0.2));
         JSpinner largeAgeDifferenceThresholdSelector = new JSpinner(new SpinnerNumberModel(Config.getLargeAgeDifferenceThreshold(), 0, 999.0, 0.2));
+        JSpinner largeGroupSizeThresholdSelector = new JSpinner(new SpinnerNumberModel(Config.getLargeGroupSizeThreshold(), -999, 999, 1));
+        JSpinner largeGroupAgeLimitSelector = new JSpinner(new SpinnerNumberModel(Config.getLargeGroupAgeLimit(), -999.0, 999.0, 0.2));
 
-        ageSettings.add(immutableText("AGE DIFFERENCE THRESHOLD"));         ageSettings.add(ageDifferenceThresholdSelector);        ageSettings.add(immutableText("Jahre"));
-        ageSettings.add(immutableText("LARGE AGE DIFFERENCE THRESHOLD"));   ageSettings.add(largeAgeDifferenceThresholdSelector);   ageSettings.add(immutableText("Jahre"));
+        ageSettings.add(immutableText("AGE DIFFERENCE THRESHOLD"));         ageSettings.add(ageDifferenceThresholdSelector);        ageSettings.add(immutableText("Years"));
+        ageSettings.add(immutableText("LARGE AGE DIFFERENCE THRESHOLD"));   ageSettings.add(largeAgeDifferenceThresholdSelector);   ageSettings.add(immutableText("Years"));
+        ageSettings.add(immutableText("LARGE GROUP SIZE THRESHOLD"));       ageSettings.add(largeGroupSizeThresholdSelector);       ageSettings.add(immutableText("People"));
+        ageSettings.add(immutableText("LARGE GROUP AGE LIMIT"));            ageSettings.add(largeGroupAgeLimitSelector);            ageSettings.add(immutableText("Years"));
 
         settingsPage.add(ageSettings);
         settingsPage.add(Box.createVerticalStrut(20));
@@ -165,6 +171,8 @@ public class GUI {
 
             ageDifferenceThresholdSelector.setValue(Config.getAgeDifferenceThreshold());
             largeAgeDifferenceThresholdSelector.setValue(Config.getLargeAgeDifferenceThreshold());
+            largeGroupSizeThresholdSelector.setValue(Config.getLargeGroupSizeThreshold());
+            largeGroupAgeLimitSelector.setValue(Config.getLargeGroupAgeLimit());
 
             log("Reset to defaults");
         });
@@ -181,11 +189,13 @@ public class GUI {
             Config.setSameGenderBonus((double) genderSelector.getValue());
 
             Config.setLargeGroupBonus((double) largeGroupSelector.getValue());
-            Config.setUnderOccupancyPenalty((double) underoccupancySelector.getValue());
+            Config.setUnderoccupancyPenalty((double) underoccupancySelector.getValue());
             Config.setCriticalOccupancyPenalty((double) criticalOccupancySelector.getValue());
 
             Config.setAgeDifferenceThreshold((double) ageDifferenceThresholdSelector.getValue());
             Config.setLargeAgeDifferenceThreshold((double) largeAgeDifferenceThresholdSelector.getValue());
+            Config.setLargeGroupSizeThreshold((int) largeGroupSizeThresholdSelector.getValue());
+            Config.setLargeGroupAgeLimit((double) largeGroupAgeLimitSelector.getValue());
 
             log("Parameters were set.");
         });
@@ -234,7 +244,7 @@ public class GUI {
                     case 2 -> people.get(rowIndex).getBirth().format(formatter);
                     case 3 -> people.get(rowIndex).getGender();
                     case 4 -> people.get(rowIndex).getLocation();
-                    case 5 -> people.get(rowIndex).getPreferences().stream().map(Person::getName).toList().toString();
+                    case 5 -> Result.toStringList(people.get(rowIndex).getPreferences());
                     default -> null;
                 };
             }
@@ -250,8 +260,10 @@ public class GUI {
 
         JPanel importPanel = new JPanel();
         JTextPane importText = immutableText("Import people from File");
-        importText.setToolTipText("Import people data from CSV file. Format should be \n" +
-                "{name}, {birth}[MM-YYYY], {location}, {gender}[f|m|d], {preferences}[name1;name2;...], {group}");
+        importText.setToolTipText("""
+                Import people data from CSV file. Format should be\s
+                {name}, {birth}[MM-YYYY], {location}, {gender}[f|m|d], {preferences}[name1;name2;...], {group}\s
+                The first line of the file will be ignored.""");
         importPanel.add(importText);
 
         JFileChooser importFileChooser = new JFileChooser();
@@ -262,7 +274,12 @@ public class GUI {
         browseButton.addActionListener(ignored -> {
             int returnVal = importFileChooser.showOpenDialog(importPanel);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
-                Person.addPeople(Main.parsePeople(importFileChooser.getSelectedFile()));
+                try {
+                    Person.addPeople(Main.parsePeople(importFileChooser.getSelectedFile()));
+                } catch (IllegalArgumentException e) {
+                    JOptionPane.showConfirmDialog(fenster, "Illegal CSV Format: \n" + e.getMessage(), "Warning",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                }
                 model.fireTableDataChanged();
             }
         });
@@ -275,7 +292,6 @@ public class GUI {
 
         importPanel.add(browseButton);
         importPanel.add(test);
-
         peoplePage.add(importPanel);
 
         JPanel manualPanel = new JPanel();
@@ -333,6 +349,10 @@ public class GUI {
             try {
                 char groupv = group.getText().charAt(0);
                 String namev = name.getText().trim();
+                if (Person.fromName(namev) != null &&
+                    JOptionPane.showConfirmDialog(fenster, namev + " already exists. Do you want to add them anyway?",
+                    "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.NO_OPTION) return;
+
                 YearMonth birthv = YearMonth.of((int) birthYear.getValue(), (int) birthMonth.getValue());
                 String locationv = location.getText().trim();
                 char genderv = gender.getText().charAt(0);
@@ -340,7 +360,8 @@ public class GUI {
                 for (String pref : preferences.getText().split(",")) {
                     Person prefPerson = Person.fromName(pref.trim());
                     if (prefPerson == null) {
-                        log(pref + " does not exist. This person was not added to preferences list of " + namev);
+                        if (!pref.trim().isEmpty())
+                            log(pref + " does not exist. This person was not added to preferences list of " + namev);
                         continue;
                     }
                     preferencesv.add(prefPerson);
@@ -349,7 +370,7 @@ public class GUI {
                 new Person(namev, birthv, locationv, genderv, preferencesv, groupv);
                 model.fireTableDataChanged();
             } catch (Exception e) {
-                log("Insufficient information. \n Stacktrace \n" + e.getMessage());
+                log("An error occurred: \n" + e.getMessage());
             }
         });
 
@@ -454,14 +475,18 @@ public class GUI {
         importPanel.add(importText);
 
         JFileChooser importFileChooser = new JFileChooser();
-        FileNameExtensionFilter csvFilter = new FileNameExtensionFilter("CSV Spreadsheets", "csv");
         importFileChooser.setFileFilter(csvFilter);
 
         JButton browseButton = new JButton("Browse");
         browseButton.addActionListener(ignored -> {
             int returnVal = importFileChooser.showOpenDialog(importPanel);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
-                Room.addRooms(Main.parseRooms(importFileChooser.getSelectedFile()));
+                try {
+                    Room.addRooms(Main.parseRooms(importFileChooser.getSelectedFile()));
+                } catch (IllegalArgumentException e) {
+                    JOptionPane.showConfirmDialog(fenster, "Illegal CSV Format: \n" + e.getMessage(), "Warning",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                }
                 model.fireTableDataChanged();
             }
         });
@@ -512,13 +537,18 @@ public class GUI {
             saveFileChooser.setFileFilter(csvFilter);
             int returnValue = saveFileChooser.showSaveDialog(fenster);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
+                if (!saveFileChooser.getSelectedFile().getName().endsWith(".csv")) {
+                    JOptionPane.showConfirmDialog(fenster, "Please select a CSV file (add \".csv\" to file name)", "Warning",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 try {
                     BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
                     writer.write(Room.everywhere());
                     writer.flush();
                     writer.close();
                 } catch (IOException e) {
-                    JOptionPane.showConfirmDialog(fenster, "Failed to export data", "Warning",
+                    JOptionPane.showConfirmDialog(fenster, "Failed to export data: \n" + e.getMessage(), "Warning",
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                 }
             }
@@ -569,7 +599,7 @@ public class GUI {
         public Object getValueAt(int rowIndex, int columnIndex) {
             return switch (columnIndex) {
                 case 0 ->                     Main.results[9-resultsList.getSelectedIndex()].config.get(rowIndex).size();
-                case 1 -> Result.toStringList(Main.results[9-resultsList.getSelectedIndex()].config.get(rowIndex));
+                case 1 -> Result.toStringList(Main.results[9-resultsList.getSelectedIndex()].config.get(rowIndex)).substring(2).replace(']', ' ');
                 default -> "";
             };
         }
@@ -596,11 +626,66 @@ public class GUI {
         buttonPanel.add(computeButton);
 
         JButton exportAllButton = new JButton("Export all");
+        exportAllButton.addActionListener(ignored -> {
+            JFileChooser saveFileChooser = new JFileChooser();
+            saveFileChooser.setFileFilter(new FileNameExtensionFilter("Text files", "txt"));
+            int returnValue = saveFileChooser.showSaveDialog(fenster);
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
+                if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
+                    JOptionPane.showConfirmDialog(fenster, "Please select a text file (add \".txt\" to file name)", "Warning",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                try {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                    StringBuilder ret = new StringBuilder("ALL CONFIGURATIONS\n\n\n");
+                    for (int i = 1; i <= Main.results.length; ++i) {
+                        Result r = Main.results[10-i];
+                        ret.append("Result #").append(i).append(" (").append(((double)((int)(r.score*100)))/100).append("): [\n");
+                        StringBuilder res = new StringBuilder("    " + Result.toString(r.config, ",\n    "));
+                        res.deleteCharAt(res.indexOf("["));
+                        res.deleteCharAt(res.length()-1).append("\n];");
+                        ret.append(res).append("\n\n");
+                    }
+                    ret.append("--- End of file ---");
+                    writer.write(ret.toString());
+                    writer.flush();
+                    writer.close();
+                } catch (IOException e) {
+                    JOptionPane.showConfirmDialog(fenster, "Failed to export data: \n" + e.getMessage(), "Warning",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
 
+                }
+            }
+        });
         buttonPanel.add(exportAllButton);
 
         JButton exportButton = new JButton("Export");
-
+        exportButton.addActionListener(ignored -> {
+            JFileChooser saveFileChooser = new JFileChooser();
+            saveFileChooser.setFileFilter(new FileNameExtensionFilter("Text files", "txt"));
+            int returnValue = saveFileChooser.showSaveDialog(fenster);
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
+                if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
+                    JOptionPane.showConfirmDialog(fenster, "Please select a text file (add \".txt\" to file name)", "Warning",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                try {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                    StringBuilder ret = new StringBuilder();
+                    Result r = Main.results[9-resultsList.getSelectedIndex()];
+                    ret.append("Result #").append(resultsList.getSelectedIndex()).append(" (").append(((double)((int)(r.score*100)))/100).append("): \n")
+                            .append(Result.toString(r.config, ",\n")).append(";\n");
+                    writer.write(ret.toString());
+                    writer.flush();
+                    writer.close();
+                } catch (IOException e) {
+                    JOptionPane.showConfirmDialog(fenster, "Failed to export data: \n" + e.getMessage(), "Warning",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
         buttonPanel.add(exportButton);
 
 
@@ -626,5 +711,6 @@ public class GUI {
         for (int i = 1; i <= Main.results.length; ++i) {
             model.addElement("Result #" + i + " ("+ ((double)((int)(Main.results[10-i].score*100)))/100 + ")");
         }
+        resultsList.setSelectedIndex(0);
     }
 }

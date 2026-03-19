@@ -22,16 +22,19 @@ public class Result {
     }
 
     public static String toString(List<List<Person>> config) {
+        return toString(config, ", ");
+    }
+    public static String toString(List<List<Person>> config, String divider) {
         if (config.isEmpty()) return "[]";
         StringBuilder ret = new StringBuilder("[");
         for (List<Person> list : config) {
-            ret.append(toStringList(list)).append(", ");
+            ret.append(toStringList(list)).append(divider);
         }
-        return ret.delete(ret.length() - 2, ret.length()).append("]").toString();
+        return ret.delete(ret.length() - divider.length(), ret.length()).append("]").toString();
     }
     public static String toStringList(List<Person> list) {
         if (list.isEmpty()) return "[]";
-        StringBuilder ret = new StringBuilder("[");
+        StringBuilder ret = new StringBuilder(String.valueOf(list.size())).append("[");
         for (Person p : list) {
             ret.append(p.getName()).append(", ");
         }

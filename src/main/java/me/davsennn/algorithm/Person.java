@@ -3,10 +3,11 @@ package me.davsennn.algorithm;
 import me.davsennn.Config;
 
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class Person {
+public class Person implements Comparable<Person> {
+    public static final YearMonth now = YearMonth.now();
+
     private static List<Person> people = new ArrayList<>();
 
     public static List<Person> getPeople() {
@@ -42,36 +43,16 @@ public class Person {
     }
 
     private final UUID id;
-    private String name;
-    private YearMonth birth;
-    private String location;
-    private char gender; // 'm' for male, 'f' for female, 'd' for diverse
-    private char group;
+    private final String name;
+    private final YearMonth birth;
+    private final String location;
+    private final char gender; // 'm' for male, 'f' for female, 'd' for diverse
+    private final char group;
 
     private List<Person> preferences;
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setBirth(YearMonth birth) {
-        this.birth = birth;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public void setGender(char gender) {
-        this.gender = gender;
-    }
-
     public void setPreferences(List<Person> preferences) {
         this.preferences = preferences;
-    }
-
-    public void setGroup(char group) {
-        this.group = group;
     }
 
     public UUID getId() {
@@ -102,6 +83,7 @@ public class Person {
         return group;
     }
 
+    @Override
     public int compareTo(Person other) {
         return getId().compareTo(other.getId());
     }
@@ -118,7 +100,7 @@ public class Person {
     }
 
     public float ageDiffYears(YearMonth other) {
-        return (this.birth.getYear() - other.getYear()) + (float) (this.birth.getMonthValue() - other.getMonthValue()) /12;
+        return Math.abs((this.birth.getYear() - other.getYear()) + (float) (this.birth.getMonthValue() - other.getMonthValue()) /12);
     }
 
     public boolean prefers(Person other) {
@@ -139,52 +121,52 @@ public class Person {
             prefstring.deleteCharAt(prefstring.length() - 1);
         }
         prefstring.append("], ");
-        return name + ", " + birth.format(DateTimeFormatter.ofPattern("MM uuuu")) + ", " + location + ", " +
-                gender + ", " + prefstring + group;
+        return String.format("%1$s, %2$tm %2$tY, %3$s, %4$s, %5$s%6$s", name, birth, location, gender, prefstring, group);
     }
 
     public static double calculatePreferenceScore(List<Person> ppl, Map<Person[], Double> custom_bonuses) {
-        if (!(Config.getPreferenceBonus() >= 0)) {
+        if (!(Config.getPreferenceBonus() >= 0))
             Config.setDefaults();
-        }
-        if (ppl == null || ppl.size() < 2) {
+
+        if (ppl == null || ppl.size() < 2)
             return 0;
-        }
+
         if (ppl.size() >= Room.getMaxCapacity())
             return Double.NEGATIVE_INFINITY;
 
         double score = 0.0;
-        Person oldest = null;
-        Person youngest = null;
 
         for (Person p : ppl) {
-            List<Person> preferences = new ArrayList<>(p.getPreferences());
+            int noPreferences = p.getPreferences().size();
 
             for (Person q : ppl) {
-                preferences.remove(q);
+                if (p.prefers(q)) --noPreferences;
 
-                if (p.equals(q)) continue; // Skip self-comparison
+                if (p.equals(q)) continue;
+                if (p.getGroup() != q.getGroup()) return Double.NEGATIVE_INFINITY;
+
+                double ageDiff = p.ageDiffYears(q.getBirth());
+
                 if (p.mutualPreference(q))                      score += Config.getMutualPreferenceBonus() / 2;
                 else if (p.prefers(q))                          score += Config.getPreferenceBonus();
-                else                                            score -= Config.getNonPreferencePenalty(); // Penalize non-preference
+                else                                            score -= Config.getNonPreferencePenalty();
                 if (p.getLocation().equals(q.getLocation()))    score += Config.getSameLocationBonus();
                 if (p.getGender() == q.getGender())             score += Config.getSameGenderBonus();
+                if (ageDiff >= Config.getAgeDifferenceThreshold())          score -= ageDiff * Config.getAgeDifferencePenalty();
+                if (ageDiff >= Config.getLargeAgeDifferenceThreshold())     score -= ageDiff * Config.getLargeAgeDifferencePenalty();
 
 
                 if (custom_bonuses != null && custom_bonuses.containsKey(new Person[]{p, q})) {
                     score += custom_bonuses.get(new Person[]{p, q});
                 }
-
-                if (oldest == null || oldest.getBirth().isAfter(p.getBirth())) oldest = p;
-                if (youngest == null || youngest.getBirth().isBefore(p.getBirth())) youngest = p;
             }
 
-            score -= preferences.size() * Config.getUnfulfilledPreferencePenalty(); // Penalize for unfulfilled preferences
+            if (p.ageDiffYears(now) <= Config.getLargeGroupAgeLimit() &&
+                ppl.size() >= Config.getLargeGroupSizeThreshold())          score += Config.getLargeGroupBonus() * ppl.size();
+
+
+            score -= noPreferences * Config.getUnfulfilledPreferencePenalty(); // Penalize for unfulfilled preferences
         }
-        assert oldest != null;
-        double ageDiff = oldest.ageDiffYears(youngest.getBirth());
-        if (ageDiff >= Config.getAgeDifferenceThreshold())          score -= ageDiff * Config.getAgeDifferencePenalty();
-        if (ageDiff >= Config.getLargeAgeDifferenceThreshold())     score -= ageDiff * Config.getLargeAgeDifferencePenalty();
 
         score /= (ppl.size() - 1); // Normalize score by number of comparisons
         return score;
@@ -192,12 +174,10 @@ public class Person {
 
     public static double calculateOptimality(List<List<Person>> groups) {
         if (groups == null || groups.isEmpty()) {
-            throw new NullPointerException("Groups cannot be null or empty for optimality calculation.");
+            return Double.NEGATIVE_INFINITY;
         }
         double totalScore = 0.0;
         for (List<Person> group : groups) {
-            // Room room = Room.chooseRoom(group);
-            // totalScore += room != null ? room.calculateGroupOptimality(group, custom_bonuses) : 0;
             int room = Room.chooseRoom(group.size());
             if (room == -1) return Double.NEGATIVE_INFINITY;
             totalScore += Room.calculateOptimality(group, room);

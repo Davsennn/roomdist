@@ -10,6 +10,7 @@ public class Room {
         return rooms;
     }
     // availableRooms.get(capacity) return how many rooms of specified capacity are left
+    public static TreeMap<Integer, Integer> roomSizes = new TreeMap<>();
     public static TreeMap<Integer, Integer> availableRooms = new TreeMap<>();
     private static int maxCapacity;
     public static int getMaxCapacity() {
@@ -20,12 +21,14 @@ public class Room {
                 .map(Room::getCapacity)
                 .max(Integer::compareTo)
                 .orElse(Integer.MAX_VALUE);
+
+        roomSizes = new TreeMap<>();
+        for (Room r : rooms) {
+            Room.roomSizes.merge(r.getCapacity(), 1, Integer::sum);
+        }
     }
     public static void resetAvailableRooms() {
-        availableRooms = new TreeMap<>();
-        for (Room r : rooms) {
-            Room.availableRooms.merge(r.getCapacity(), 1, Integer::sum);
-        }
+        availableRooms = new TreeMap<>(roomSizes);
     }
 
 
@@ -40,14 +43,6 @@ public class Room {
         rooms = new ArrayList<>();
     }
 
-    public static Room fromRoomID(String id) {
-        for (Room r : rooms) {
-            if (r.getId().equals(id))
-                return r;
-        }
-        return null;
-    }
-
     public static String everywhere() {
         if (rooms.isEmpty()) return "[]";
         StringBuilder ret = new StringBuilder();
@@ -58,8 +53,8 @@ public class Room {
     }
 
     public static int chooseRoom(int groupSize) {
-        if (groupSize == 0) return 0;
         //return groupSize;
+        if (groupSize == 0) return 0;
 
         Integer key;
 
@@ -89,14 +84,12 @@ public class Room {
     }
 
 
-    private String id;
-    private int capacity;
-    private List<Person> occupants;
+    private final String id;
+    private final int capacity;
 
     public Room(String id, int capacity) {
         this.id = id;
         this.capacity = capacity;
-        this.occupants = new ArrayList<>();
         if (!rooms.contains(this)) {
             Room.rooms.add(this);
             Room.availableRooms.merge(this.capacity, 1, Integer::sum);
@@ -107,66 +100,12 @@ public class Room {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public int getCapacity() {
         return capacity;
     }
 
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
-    }
-
-    public List<Person> getOccupants() {
-        return occupants;
-    }
-
-    public void setOccupants(List<Person> occupants) {
-        this.occupants = occupants;
-    }
-
-    public boolean addOccupant(Person person) {
-        if (occupants.size() < capacity) {
-            occupants.add(person);
-            return true;
-        } else if (occupants.size() == capacity) {
-            occupants.add(person);
-            System.out.println("Critical occupancy reached in room: " + id);
-        } else {
-            System.out.println("Room " + id + " is full. Cannot add " + person.getName());
-        }
-        return false;
-    }
-
     public String toString() {
         return this.id + "," + this.capacity;
-    }
-
-    /**
-     * Calculates the optimality score for a group of persons in this room.
-     * The score is based on preference compatibility and group size.
-     * Other parameters are passed to {@link Person#calculatePreferenceScore(List, Map)}.
-     *
-     * @return a score representing the optimality of the group in this room, Negative infinity if the mapping is not possible
-     */
-    public double calculateGroupOptimality(List<Person> group, Map<Person[], Double> custom_bonuses) {
-        if (group == null || group.size() < 2) {
-            return 0.0;
-        }
-        if (group.size() > capacity + 1) {
-            System.out.println("Group exceeds room capacity: " + group.size() + " > " + capacity);
-            return Double.NEGATIVE_INFINITY; // Group exceeds room capacity
-        }
-        double score = Person.calculatePreferenceScore(group, custom_bonuses);
-        score += group.size() * Config.getLargeGroupBonus(); // Bonus for larger groups
-        if (group.size() < capacity - 2)
-            score -= Config.getUnderOccupancyPenalty() * (capacity - group.size()); // Penalty for under-occupancy
-        if (group.size() == capacity + 1)
-            score -= Config.getCriticalOccupancyPenalty(); // Penalty for critical occupancy
-
-        return score;
     }
 
     public static double calculateOptimality(List<Person> group, int capacity) {
@@ -174,7 +113,6 @@ public class Room {
             return 0.0;
         }
         if (group.size() > capacity + 1) {
-            System.out.println("Group exceeds room capacity: " + group.size() + " > " + capacity);
             return Double.NEGATIVE_INFINITY; // Group exceeds room capacity
         }
         double score = Person.calculatePreferenceScore(group, null);
