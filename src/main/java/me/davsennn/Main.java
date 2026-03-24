@@ -10,18 +10,20 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 
 public class Main {
+    public static final String version = "0.2.0";
 
-    static void main(String[] args) {
+    static void main() {
         Config.setDefaults();
         SwingUtilities.invokeLater(GUI::createWindow);
     }
 
-    static long processed = 0;
+    public static long processed = 0;
     public static PriorityQueue<Result> resultPriorityQueue;
     public static Result[] results;
-    static long startTime;
-    static long endTime;
+    public static long startTime;
+    public static long endTime;
     public static void execute() {
+        processed = 0;
         startTime = System.nanoTime();
         // split(Person.getPeople(), Room.getRooms().size());
         Room.finish();
@@ -55,16 +57,6 @@ public class Main {
                 if (resultPriorityQueue.size() >= 11) {
                     resultPriorityQueue.remove();
                 }
-                /*
-                Result r = resultPriorityQueue.peek();
-                if (r != null)
-                    System.out.println(r.score + " | " + r.toString());
-
-                /*
-                for (Result rr : resultPriorityQueue) {
-                    System.out.println(((double)((int)(rr.score*100)))/100 + " | " + r);
-                }
-                 */
             }
 
             return;

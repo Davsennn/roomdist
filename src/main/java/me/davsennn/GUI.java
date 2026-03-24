@@ -18,26 +18,29 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.ResourceBundle;
 
 public class GUI {
     public static JFrame fenster;
+    public static void update() { fenster.revalidate(); fenster.repaint(); }
+
+    public static final String ROOT = System.getProperty("user.dir");
 
     public static final Locale[] locales = new Locale[]{ Locale.ENGLISH, Locale.GERMAN };
-    public static Locale locale;
+    public static Locale locale = Locale.getDefault();
+    public static ResourceBundle resources;
+    public static String get(String key) { return resources.getString(key); }
 
     private static JPanel settingsPage;
     private static JPanel peoplePage;
     private static JPanel roomsPage;
     private static JPanel computePage;
 
-    private static final FileNameExtensionFilter csvFilter = new FileNameExtensionFilter("CSV Spreadsheets", "csv");
+    private static FileNameExtensionFilter csvFilter;
 
     public static void createWindow() {
-        fenster = new JFrame("roomdist Application 1.0.0");
+        fenster = new JFrame("roomdist Application " + Main.version);
         fenster.setSize(1200, 900);
         fenster.setVisible(true);
         fenster.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -50,12 +53,18 @@ public class GUI {
         // navigation.setBackground(Color.BLACK);
 
         JComboBox<Locale> localeSelector = new JComboBox<>(locales);
+        localeSelector.setSelectedItem(locale);
         localeSelector.addActionListener(ignored -> {
             locale = (Locale) localeSelector.getSelectedItem();
-            fenster.revalidate();
-            fenster.repaint();
+            fenster.setVisible(false);
+            createWindow();
+            System.out.println(locale);
         });
         locale = (Locale) localeSelector.getSelectedItem();
+        System.out.println(locale);
+        resources = ResourceBundle.getBundle("lang", locale);
+
+        csvFilter = new FileNameExtensionFilter(get("desc.csvfilter"), "csv");
 
 
         JTabbedPane tabs = new JTabbedPane();
@@ -63,10 +72,10 @@ public class GUI {
         buildPeoplePage();
         buildRoomsPage();
         buildComputePage();
-        tabs.addTab("Settings", settingsPage);
-        tabs.addTab("People", peoplePage);
-        tabs.addTab("Rooms", roomsPage);
-        tabs.addTab("Compute", computePage);
+        tabs.addTab(get("title.settings"), settingsPage);
+        tabs.addTab(get("title.people"), peoplePage);
+        tabs.addTab(get("title.rooms"), roomsPage);
+        tabs.addTab(get("title.compute"), computePage);
         // tabs.setBackground(Color.GRAY);
 
         navigation.add(localeSelector);
@@ -75,9 +84,18 @@ public class GUI {
         fenster.add(navigation, BorderLayout.NORTH);
     }
 
-    private static void log(String message) {
-        JOptionPane.showConfirmDialog(fenster, message, "Info",
+    private static void logDirect(String msg) {
+        JOptionPane.showConfirmDialog(fenster, msg, get("title.info"),
                 JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE);
+    }
+    private static void log(String key) { logDirect(get(key)); }
+    private static void log(String... keys) {
+        StringBuilder ret = new StringBuilder();
+        for (String key : keys) {
+            ret.append(key.equals("\n") ? "\n" : get(key)).append("\n");
+        }
+        ret.deleteCharAt(ret.length()-1);
+        logDirect(ret.toString());
     }
 
     private static JTextPane immutableText(String message, Color c) {
@@ -97,9 +115,8 @@ public class GUI {
         return ret;
     }
     private static JTextPane immutableText(String message) { return immutableText(message, Color.BLACK); }
+    private static JTextPane immutableGet(String key) { return immutableText(get(key)); }
     private static void buildSettingsPage() {
-        System.out.println("Building settings page");
-
         settingsPage = new JPanel();
         settingsPage.setLayout(new BoxLayout(settingsPage, BoxLayout.PAGE_AXIS));
         // settingsPage.setBackground(Color.DARK_GRAY);
@@ -117,14 +134,14 @@ public class GUI {
         JSpinner locationSelector =             new JSpinner(new SpinnerNumberModel(Config.getSameLocationBonus()           , -999.0, 999.0, 0.5));
         JSpinner genderSelector =               new JSpinner(new SpinnerNumberModel(Config.getSameGenderBonus()             , -999.0, 999.0, 0.5));
 
-        pairParamSettings.add(immutableText("PREFERENCE BONUS"));               pairParamSettings.add(preferenceSelector);          pairParamSettings.add(immutableText("Pts"));
-        pairParamSettings.add(immutableText("NON PREFERENCE PENALTY"));         pairParamSettings.add(nonPreferenceSelector);       pairParamSettings.add(immutableText("Pts"));
-        pairParamSettings.add(immutableText("UNFULFILLED PREFERENCE PENALTY")); pairParamSettings.add(unfulfilledPreferenceSelector);pairParamSettings.add(immutableText("Pts"));
-        pairParamSettings.add(immutableText("MUTUAL PREFERENCE BONUS"));        pairParamSettings.add(mutualPreferenceSelector);    pairParamSettings.add(immutableText("Pts"));
-        pairParamSettings.add(immutableText("AGE DIFFERENCE PENALTY"));         pairParamSettings.add(ageDifferenceSelector);       pairParamSettings.add(immutableText("Pts per year of difference"));
-        pairParamSettings.add(immutableText("LARGE AGE DIFFERENCE PENALTY"));   pairParamSettings.add(largeAgeDifferenceSelector);  pairParamSettings.add(immutableText("Pts per year of difference"));
-        pairParamSettings.add(immutableText("SAME LOCATION BONUS"));            pairParamSettings.add(locationSelector);            pairParamSettings.add(immutableText("Pts"));
-        pairParamSettings.add(immutableText("SAME GENDER BONUS"));              pairParamSettings.add(genderSelector);              pairParamSettings.add(immutableText("Pts"));
+        pairParamSettings.add(immutableGet("set.preference"));               pairParamSettings.add(preferenceSelector);          pairParamSettings.add(immutableGet("set.pts"));
+        pairParamSettings.add(immutableGet("set.nonPreference"));         pairParamSettings.add(nonPreferenceSelector);       pairParamSettings.add(immutableGet("set.pts"));
+        pairParamSettings.add(immutableGet("set.unfulfilledPreference")); pairParamSettings.add(unfulfilledPreferenceSelector);pairParamSettings.add(immutableGet("set.pts"));
+        pairParamSettings.add(immutableGet("set.mutualPreference"));        pairParamSettings.add(mutualPreferenceSelector);    pairParamSettings.add(immutableGet("set.pts"));
+        pairParamSettings.add(immutableGet("set.ageDiff"));         pairParamSettings.add(ageDifferenceSelector);       pairParamSettings.add(immutableGet("set.ptsperyear"));
+        pairParamSettings.add(immutableGet("set.largeAgeDiff"));   pairParamSettings.add(largeAgeDifferenceSelector);  pairParamSettings.add(immutableGet("set.ptsperyear"));
+        pairParamSettings.add(immutableGet("set.sameLocation"));            pairParamSettings.add(locationSelector);            pairParamSettings.add(immutableGet("set.pts"));
+        pairParamSettings.add(immutableGet("set.sameGender"));              pairParamSettings.add(genderSelector);              pairParamSettings.add(immutableGet("set.pts"));
 
         settingsPage.add(pairParamSettings);
         settingsPage.add(Box.createVerticalStrut(20));
@@ -137,9 +154,9 @@ public class GUI {
         JSpinner underoccupancySelector = new JSpinner(new SpinnerNumberModel(Config.getUnderOccupancyPenalty(), -999.0, 999.0, 0.5));
         JSpinner criticalOccupancySelector = new JSpinner(new SpinnerNumberModel(Config.getCriticalOccupancyPenalty(), -999.0, 999.0, 0.5));
 
-        groupParamSettings.add(immutableText("LARGE GROUP BONUS"));         groupParamSettings.add(largeGroupSelector);         groupParamSettings.add(immutableText("Punkte"));
-        groupParamSettings.add(immutableText("UNDEROCCUPANCY PENALTY"));    groupParamSettings.add(underoccupancySelector);     groupParamSettings.add(immutableText("Punkte"));
-        groupParamSettings.add(immutableText("CRITICAL OCCUPANCY PENALTY"));groupParamSettings.add(criticalOccupancySelector);  groupParamSettings.add(immutableText("Punkte"));
+        groupParamSettings.add(immutableGet("set.largeGroup"));         groupParamSettings.add(largeGroupSelector);         groupParamSettings.add(immutableGet("set.pts"));
+        groupParamSettings.add(immutableGet("set.underoccupancy"));    groupParamSettings.add(underoccupancySelector);     groupParamSettings.add(immutableGet("set.pts"));
+        groupParamSettings.add(immutableGet("set.criticalOccupancy"));groupParamSettings.add(criticalOccupancySelector);  groupParamSettings.add(immutableGet("set.pts"));
 
         settingsPage.add(groupParamSettings);
         settingsPage.add(Box.createVerticalStrut(20));
@@ -153,19 +170,17 @@ public class GUI {
         JSpinner largeGroupSizeThresholdSelector = new JSpinner(new SpinnerNumberModel(Config.getLargeGroupSizeThreshold(), -999, 999, 1));
         JSpinner largeGroupAgeLimitSelector = new JSpinner(new SpinnerNumberModel(Config.getLargeGroupAgeLimit(), -999.0, 999.0, 0.2));
 
-        ageSettings.add(immutableText("AGE DIFFERENCE THRESHOLD"));         ageSettings.add(ageDifferenceThresholdSelector);        ageSettings.add(immutableText("Years"));
-        ageSettings.add(immutableText("LARGE AGE DIFFERENCE THRESHOLD"));   ageSettings.add(largeAgeDifferenceThresholdSelector);   ageSettings.add(immutableText("Years"));
-        ageSettings.add(immutableText("LARGE GROUP SIZE THRESHOLD"));       ageSettings.add(largeGroupSizeThresholdSelector);       ageSettings.add(immutableText("People"));
-        ageSettings.add(immutableText("LARGE GROUP AGE LIMIT"));            ageSettings.add(largeGroupAgeLimitSelector);            ageSettings.add(immutableText("Years"));
+        ageSettings.add(immutableGet("set.ageDiffThr"));         ageSettings.add(ageDifferenceThresholdSelector);        ageSettings.add(immutableGet("set.years"));
+        ageSettings.add(immutableGet("set.largeAgeDiffThr"));   ageSettings.add(largeAgeDifferenceThresholdSelector);   ageSettings.add(immutableGet("set.years"));
+        ageSettings.add(immutableGet("set.largeGroupThr"));       ageSettings.add(largeGroupSizeThresholdSelector);       ageSettings.add(immutableGet("set.years"));
+        ageSettings.add(immutableGet("set.largeGroupAgeLimit"));            ageSettings.add(largeGroupAgeLimitSelector);            ageSettings.add(immutableGet("set.years"));
 
         settingsPage.add(ageSettings);
         settingsPage.add(Box.createVerticalStrut(20));
 
         JPanel buttons = new JPanel();
-        buttons.setLayout(new GridLayout(1, 2, 10, 0));
-        // buttons.setBackground(Color.DARK_GRAY);
 
-        JButton defaults = new JButton("Reset");
+        JButton defaults = new JButton(get("set.reset"));
         defaults.addActionListener(ignored -> {
             Config.setDefaults();
 
@@ -187,10 +202,10 @@ public class GUI {
             largeGroupSizeThresholdSelector.setValue(Config.getLargeGroupSizeThreshold());
             largeGroupAgeLimitSelector.setValue(Config.getLargeGroupAgeLimit());
 
-            log("Reset to defaults");
+            log("msg.reset");
         });
 
-        JButton apply = new JButton("Apply");
+        JButton apply = new JButton(get("set.apply"));
         apply.addActionListener(ignored -> {
             Config.setPreferenceBonus((double) preferenceSelector.getValue());
             Config.setNonPreferencePenalty((double) nonPreferenceSelector.getValue());
@@ -210,9 +225,28 @@ public class GUI {
             Config.setLargeGroupSizeThreshold((int) largeGroupSizeThresholdSelector.getValue());
             Config.setLargeGroupAgeLimit((double) largeGroupAgeLimitSelector.getValue());
 
-            log("Parameters were set.");
+            log("msg.set");
         });
 
+        JButton infoButton = new JButton(get("set.info"));
+        infoButton.addActionListener(ignored -> log(
+                "desc.pairwise",
+                "desc.preference",
+                "desc.nonPreference",
+                "desc.unfulfilledPreference",
+                "desc.mutualPreference",
+                "desc.ageDiff",
+                "desc.largeAgeDiff",
+                "desc.sameLocation",
+                "desc.sameGender",
+                "\n",
+                "desc.roomwise",
+                "desc.largeGroup",
+                "desc.underoccupancy",
+                "desc.criticalOccupancy"
+        ));
+
+        buttons.add(infoButton);
         buttons.add(defaults);
         buttons.add(apply);
 
@@ -237,12 +271,12 @@ public class GUI {
             @Override
             public String getColumnName(int col) {
                 return switch (col) {
-                    case 0 -> "Group";
-                    case 1 -> "Name";
-                    case 2 -> "Birth";
-                    case 3 -> "Gender";
-                    case 4 -> "Location";
-                    case 5 -> "Preferences";
+                    case 0 -> get("col.group");
+                    case 1 -> get("col.name");
+                    case 2 -> get("col.birth");
+                    case 3 -> get("col.gender");
+                    case 4 -> get("col.location");
+                    case 5 -> get("col.prefs");
                     default -> null;
                 };
             }
@@ -272,33 +306,29 @@ public class GUI {
         table.getColumnModel().getColumn(5).setPreferredWidth(500);
 
         JPanel importPanel = new JPanel();
-        JTextPane importText = immutableText("Import people from File");
-        importText.setToolTipText("""
-                Import people data from CSV file. Format should be\s
-                {name}, {birth}[MM-YYYY], {location}, {gender}[f|m|d], {preferences}[name1;name2;...], {group}\s
-                The first line of the file will be ignored.""");
+        JTextPane importText = immutableGet("ppl.import");
+        importText.setToolTipText(get("ppl.importtooltip"));
         importPanel.add(importText);
 
         JFileChooser importFileChooser = new JFileChooser();
-        FileNameExtensionFilter csvFilter = new FileNameExtensionFilter("CSV Spreadsheets", "csv");
         importFileChooser.setFileFilter(csvFilter);
 
-        JButton browseButton = new JButton("Browse");
+        JButton browseButton = new JButton(get("button.browse"));
         browseButton.addActionListener(ignored -> {
             int returnVal = importFileChooser.showOpenDialog(importPanel);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 try {
                     Person.addPeople(Main.parsePeople(importFileChooser.getSelectedFile()));
                 } catch (IllegalArgumentException e) {
-                    JOptionPane.showConfirmDialog(fenster, "Illegal CSV Format: \n" + e.getMessage(), "Warning",
+                    JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                 }
                 model.fireTableDataChanged();
             }
         });
-        JButton test = new JButton("Test");
+        JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
-            File file = new File("C:\\Users\\david\\IdeaProjects\\roomdist\\src\\main\\resources\\people.csv");
+            File file = new File(ROOT + "\\src\\main\\resources\\people.csv");
             Person.addPeople(Main.parsePeople(file));
             model.fireTableDataChanged();
         });
@@ -312,21 +342,21 @@ public class GUI {
         manualPanel.setBackground(Color.LIGHT_GRAY);
 
         JPanel groupPanel = new JPanel();
-        groupPanel.add(immutableText("Group (one character)"));
+        groupPanel.add(immutableGet("ppl.group"));
         JTextArea group = new JTextArea("");
         group.setPreferredSize(new Dimension(12, 20));
         groupPanel.add(group);
         groupPanel.setBackground(Color.LIGHT_GRAY);
 
         JPanel namePanel = new JPanel();
-        namePanel.add(immutableText("Name"));
+        namePanel.add(immutableGet("ppl.name"));
         JTextArea name = new JTextArea();
         name.setPreferredSize(new Dimension(300, 20));
         namePanel.add(name);
         namePanel.setBackground(Color.LIGHT_GRAY);
 
         JPanel birthPanel = new JPanel();
-        birthPanel.add(immutableText("Birth Month (MM YYYY)"));
+        birthPanel.add(immutableGet("ppl.birth"));
         JSpinner birthMonth = new JSpinner(new SpinnerNumberModel(1, 1, 12, 1));
         JSpinner birthYear = new JSpinner(new SpinnerNumberModel(2015, 1950, 2030, 1));
         JSpinner.NumberEditor editor = new JSpinner.NumberEditor(birthYear, "#");
@@ -336,35 +366,35 @@ public class GUI {
         birthPanel.setBackground(Color.LIGHT_GRAY);
 
         JPanel locationPanel = new JPanel();
-        locationPanel.add(immutableText("Location"));
+        locationPanel.add(immutableGet("ppl.location"));
         JTextArea location = new JTextArea();
         location.setPreferredSize(new Dimension(300, 20));
         locationPanel.add(location);
         locationPanel.setBackground(Color.LIGHT_GRAY);
 
         JPanel genderPanel = new JPanel();
-        genderPanel.add(immutableText("Gender (m|f|d)"));
+        genderPanel.add(immutableGet("ppl.gender"));
         JTextArea gender = new JTextArea();
         gender.setPreferredSize(new Dimension(12, 20));
         genderPanel.add(gender);
         genderPanel.setBackground(Color.LIGHT_GRAY);
 
         JPanel preferencePanel = new JPanel();
-        preferencePanel.add(immutableText("Preferences (\"name1, name2, name3, ...\")"));
+        preferencePanel.add(immutableGet("ppl.prefs"));
         JTextArea preferences = new JTextArea();
         preferences.setPreferredSize(new Dimension(500, 40)); // why i need 40, dont know dont care
         preferences.setLineWrap(true);
         preferencePanel.add(preferences);
         preferencePanel.setBackground(Color.LIGHT_GRAY);
 
-        JButton addManual = new JButton("Add");
+        JButton addManual = new JButton(get("button.add"));
         addManual.addActionListener(ignored -> {
             try {
                 char groupv = group.getText().charAt(0);
                 String namev = name.getText().trim();
                 if (Person.fromName(namev) != null &&
-                    JOptionPane.showConfirmDialog(fenster, namev + " already exists. Do you want to add them anyway?",
-                    "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.NO_OPTION) return;
+                    JOptionPane.showConfirmDialog(fenster, namev + " " + get("msg.personAlreadyExists"),
+                    get("title.confirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.NO_OPTION) return;
 
                 YearMonth birthv = YearMonth.of((int) birthYear.getValue(), (int) birthMonth.getValue());
                 String locationv = location.getText().trim();
@@ -374,7 +404,7 @@ public class GUI {
                     Person prefPerson = Person.fromName(pref.trim());
                     if (prefPerson == null) {
                         if (!pref.trim().isEmpty())
-                            log(pref + " does not exist. This person was not added to preferences list of " + namev);
+                            log(pref + " " + get("msg.prefDoesNotExist") + " " + namev);
                         continue;
                     }
                     preferencesv.add(prefPerson);
@@ -383,7 +413,7 @@ public class GUI {
                 new Person(namev, birthv, locationv, genderv, preferencesv, groupv);
                 model.fireTableDataChanged();
             } catch (Exception e) {
-                log("An error occurred: \n" + e.getMessage());
+                log(get("msg.err") + " \n" + e.getMessage());
             }
         });
 
@@ -398,40 +428,45 @@ public class GUI {
         peoplePage.add(manualPanel);
 
         JPanel buttons = new JPanel();
-        JButton export = new JButton("Export");
+        JButton export = new JButton(get("button.export"));
         export.addActionListener(ignored -> {
             JFileChooser saveFileChooser = new JFileChooser();
             saveFileChooser.setFileFilter(csvFilter);
             int returnValue = saveFileChooser.showSaveDialog(fenster);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
+                if (!saveFileChooser.getSelectedFile().getName().endsWith(".csv")) {
+                    JOptionPane.showConfirmDialog(fenster, get("msg.noCSVExt"), get("title.warn"),
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 try {
                     BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
                     writer.write(Person.everyone());
                     writer.flush();
                     writer.close();
                 } catch (IOException e) {
-                    JOptionPane.showConfirmDialog(fenster, "Failed to export data", "Warning",
+                    JOptionPane.showConfirmDialog(fenster, get("msg.exportFail"), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
         buttons.add(export);
 
-        JButton viewAll = new JButton("View All");
+        JButton viewAll = new JButton(get("button.viewall"));
         viewAll.addActionListener(ignored -> log(Person.everyone()));
         buttons.add(viewAll);
 
-        JButton deleteAll = new JButton("Delete All");
+        JButton deleteAll = new JButton(get("button.deleteall"));
         deleteAll.addActionListener(ignored -> {
-            int returnValue = JOptionPane.showConfirmDialog(fenster, "This will delete all people! Are you sure you want to proceed?",
-                    "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            int returnValue = JOptionPane.showConfirmDialog(fenster, get("msg.deletePpl"),
+                    get("title.confirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (returnValue == JOptionPane.YES_OPTION) {
                 Person.clearPeople();
             }
         });
         buttons.add(deleteAll);
 
-        JButton everyone = new JButton("Print all to console");
+        JButton everyone = new JButton(get("button.printall"));
         everyone.addActionListener(ignored -> {
             System.out.println(Person.getPeople().toString());
             // System.out.println(Person.everyone());
@@ -461,8 +496,8 @@ public class GUI {
             @Override
             public String getColumnName(int col) {
                 return switch (col) {
-                    case 0 -> "RoomID";
-                    case 1 -> "Capacity";
+                    case 0 -> get("col.id");
+                    case 1 -> get("col.capacity");
                     default -> null;
                 };
             }
@@ -482,30 +517,29 @@ public class GUI {
         table.getColumnModel().getColumn(1).setPreferredWidth(60);
 
         JPanel importPanel = new JPanel();
-        JTextPane importText = immutableText("Import rooms from File");
-        importText.setToolTipText("Import rooms data from CSV file. Format should be \n" +
-                "{RoomID},{Capacity}");
+        JTextPane importText = immutableGet("rms.import");
+        importText.setToolTipText(get("rms.importtooltip"));
         importPanel.add(importText);
 
         JFileChooser importFileChooser = new JFileChooser();
         importFileChooser.setFileFilter(csvFilter);
 
-        JButton browseButton = new JButton("Browse");
+        JButton browseButton = new JButton(get("button.browse"));
         browseButton.addActionListener(ignored -> {
             int returnVal = importFileChooser.showOpenDialog(importPanel);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 try {
                     Room.addRooms(Main.parseRooms(importFileChooser.getSelectedFile()));
                 } catch (IllegalArgumentException e) {
-                    JOptionPane.showConfirmDialog(fenster, "Illegal CSV Format: \n" + e.getMessage(), "Warning",
+                    JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                 }
                 model.fireTableDataChanged();
             }
         });
-        JButton test = new JButton("Test");
+        JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
-            File file = new File("C:\\Users\\david\\IdeaProjects\\roomdist\\src\\main\\resources\\rooms.csv");
+            File file = new File(ROOT + "\\src\\main\\resources\\rooms.csv");
             Room.addRooms(Main.parseRooms(file));
             model.fireTableDataChanged();
         });
@@ -519,7 +553,7 @@ public class GUI {
 
         JPanel roomIdPanel = new JPanel();
         roomIdPanel.setBackground(Color.LIGHT_GRAY);
-        roomIdPanel.add(immutableText("RoomID"));
+        roomIdPanel.add(immutableGet("rms.id"));
         JTextArea roomId = new JTextArea();
         roomId.setPreferredSize(new Dimension(100, 20));
         roomIdPanel.add(roomId);
@@ -527,12 +561,12 @@ public class GUI {
 
         JPanel capacityPanel = new JPanel();
         capacityPanel.setBackground(Color.LIGHT_GRAY);
-        capacityPanel.add(immutableText("Capacity"));
+        capacityPanel.add(immutableGet("rms.capacity"));
         JSpinner capacity = new JSpinner(new SpinnerNumberModel(5, 0, 30, 1));
         capacityPanel.add(capacity);
         manualPanel.add(capacityPanel);
 
-        JButton manualAdd = new JButton("Add");
+        JButton manualAdd = new JButton(get("button.add"));
         manualAdd.addActionListener(ignored -> {
             String roomIdv = roomId.getText().trim();
             int capacityv = (int) capacity.getValue();
@@ -544,14 +578,14 @@ public class GUI {
         roomsPage.add(manualPanel);
 
         JPanel buttons = new JPanel();
-        JButton export = new JButton("Export");
+        JButton export = new JButton(get("button.export"));
         export.addActionListener(ignored -> {
             JFileChooser saveFileChooser = new JFileChooser();
             saveFileChooser.setFileFilter(csvFilter);
             int returnValue = saveFileChooser.showSaveDialog(fenster);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
                 if (!saveFileChooser.getSelectedFile().getName().endsWith(".csv")) {
-                    JOptionPane.showConfirmDialog(fenster, "Please select a CSV file (add \".csv\" to file name)", "Warning",
+                    JOptionPane.showConfirmDialog(fenster, get("msg.noCSVExt"), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -561,21 +595,21 @@ public class GUI {
                     writer.flush();
                     writer.close();
                 } catch (IOException e) {
-                    JOptionPane.showConfirmDialog(fenster, "Failed to export data: \n" + e.getMessage(), "Warning",
+                    JOptionPane.showConfirmDialog(fenster, get("msg.exportFail") + " \n" + e.getMessage(), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
         buttons.add(export);
 
-        JButton viewAll = new JButton("View All");
+        JButton viewAll = new JButton(get("button.viewall"));
         viewAll.addActionListener(ignored -> log(Room.everywhere()));
         buttons.add(viewAll);
 
-        JButton deleteAll = new JButton("Delete All");
+        JButton deleteAll = new JButton(get("button.deleteall"));
         deleteAll.addActionListener(ignored -> {
-            int returnValue = JOptionPane.showConfirmDialog(fenster, "This will delete all rooms! Are you sure you want to proceed?",
-                    "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            int returnValue = JOptionPane.showConfirmDialog(fenster, get("msg.deleteRooms"),
+                    get("title.confirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (returnValue == JOptionPane.YES_OPTION) {
                 Room.clearRooms();
                 model.fireTableDataChanged();
@@ -583,7 +617,7 @@ public class GUI {
         });
         buttons.add(deleteAll);
 
-        JButton everyone = new JButton("Print all to console");
+        JButton everyone = new JButton(get("button.printall"));
         everyone.addActionListener(ignored -> System.out.println(Room.getRooms().toString()));
         buttons.add(everyone);
 
@@ -620,8 +654,8 @@ public class GUI {
         @Override
         public String getColumnName(int columnIndex) {
             return switch (columnIndex) {
-                case 0 -> "Size";
-                case 1 -> "Occupants";
+                case 0 -> get("col.size");
+                case 1 -> get("col.occupants");
                 default -> "";
             };
         }
@@ -630,42 +664,51 @@ public class GUI {
         computePage = new JPanel();
         computePage.setLayout(new BoxLayout(computePage, BoxLayout.PAGE_AXIS));
 
+        JTextPane log = immutableText("");
+        log.setPreferredSize(new Dimension(800, 20));
+
         JPanel buttonPanel = new JPanel();
-        JButton computeButton = new JButton("Compute");
+        JButton computeButton = new JButton(get("cmp.exec"));
         computeButton.addActionListener(ignored -> {
             Main.execute();
             constructDisplay();
+            log.setText(
+                      String.format("%,d", Main.processed) + " " + get("msg.paths") + ", "
+                    + String.format("%,d", (Main.endTime - Main.startTime)/1000000L) + "ms " + get("msg.ms") + " + "
+                    + String.format("%,d", (Main.endTime - Main.startTime)%1000000L) + "ns");
+            update();
         });
         buttonPanel.add(computeButton);
 
-        JButton exportAllButton = new JButton("Export all");
+        JButton exportAllButton = new JButton(get("button.exportall"));
         exportAllButton.addActionListener(ignored -> {
             JFileChooser saveFileChooser = new JFileChooser();
-            saveFileChooser.setFileFilter(new FileNameExtensionFilter("Text files", "txt"));
+            saveFileChooser.setFileFilter(new FileNameExtensionFilter(get("desc.txtfilter"), "txt"));
             int returnValue = saveFileChooser.showSaveDialog(fenster);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
                 if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
-                    JOptionPane.showConfirmDialog(fenster, "Please select a text file (add \".txt\" to file name)", "Warning",
+                    JOptionPane.showConfirmDialog(fenster, get("msg.noTXTExt"), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 try {
                     BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
-                    StringBuilder ret = new StringBuilder("ALL CONFIGURATIONS\n\n\n");
+                    StringBuilder ret = new StringBuilder(get("exp.all"));
+                    ret.append("\n\n\n");
                     for (int i = 1; i <= Main.results.length; ++i) {
                         Result r = Main.results[10-i];
-                        ret.append("Result #").append(i).append(" (").append(((double)((int)(r.score*100)))/100).append("): [\n");
+                        ret.append(get("exp.result")).append(" #").append(i).append(" (").append(((double)((int)(r.score*100)))/100).append("): [\n");
                         StringBuilder res = new StringBuilder("    " + Result.toString(r.config, ",\n    "));
                         res.deleteCharAt(res.indexOf("["));
                         res.deleteCharAt(res.length()-1).append("\n];");
                         ret.append(res).append("\n\n");
                     }
-                    ret.append("--- End of file ---");
+                    ret.append(get("exp.end"));
                     writer.write(ret.toString());
                     writer.flush();
                     writer.close();
                 } catch (IOException e) {
-                    JOptionPane.showConfirmDialog(fenster, "Failed to export data: \n" + e.getMessage(), "Warning",
+                    JOptionPane.showConfirmDialog(fenster, get("msg.exportFail") + " \n" + e.getMessage(), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
 
                 }
@@ -673,14 +716,14 @@ public class GUI {
         });
         buttonPanel.add(exportAllButton);
 
-        JButton exportButton = new JButton("Export");
+        JButton exportButton = new JButton(get("button.export"));
         exportButton.addActionListener(ignored -> {
             JFileChooser saveFileChooser = new JFileChooser();
-            saveFileChooser.setFileFilter(new FileNameExtensionFilter("Text files", "txt"));
+            saveFileChooser.setFileFilter(new FileNameExtensionFilter(get("desc.txtfilter"), "txt"));
             int returnValue = saveFileChooser.showSaveDialog(fenster);
             if (returnValue == JFileChooser.APPROVE_OPTION) {
                 if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
-                    JOptionPane.showConfirmDialog(fenster, "Please select a text file (add \".txt\" to file name)", "Warning",
+                    JOptionPane.showConfirmDialog(fenster, get("msg.noTXTExt"), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -694,13 +737,15 @@ public class GUI {
                     writer.flush();
                     writer.close();
                 } catch (IOException e) {
-                    JOptionPane.showConfirmDialog(fenster, "Failed to export data: \n" + e.getMessage(), "Warning",
+                    JOptionPane.showConfirmDialog(fenster, get("msg.exportFail") + " \n" + e.getMessage(), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
         buttonPanel.add(exportButton);
 
+        JPanel logPanel = new JPanel();
+        logPanel.add(log);
 
         JPanel displayPanel = new JPanel();
 
@@ -717,12 +762,13 @@ public class GUI {
         displayPanel.add(tableScrollPane);
 
         computePage.add(buttonPanel);
+        computePage.add(logPanel);
         computePage.add(displayPanel);
     }
     static void constructDisplay() {
         model.clear();
         for (int i = 1; i <= Main.results.length; ++i) {
-            model.addElement("Result #" + i + " ("+ ((double)((int)(Main.results[10-i].score*100)))/100 + ")");
+            model.addElement(get("exp.result") + " #" + i + " ("+ ((double)((int)(Main.results[10-i].score*100)))/100 + ")");
         }
         resultsList.setSelectedIndex(0);
     }
