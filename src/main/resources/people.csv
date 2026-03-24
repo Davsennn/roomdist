@@ -1,0 +1,17 @@
+{name}, {birth}[MM YYYY], {location}, {gender}["f"|"m"|"d"], {preferences}["[name1;name2; ...]""], {group}
+Lisa Müller, 03 2015, Burgweinting, f, [Max Mustermann], A
+Max Mustermann, 05 2015, Prüfening, m, [], A
+Anna Schmidt, 11 2014, Burgweinting, f, [Lisa Müller;Max Mustermann], A
+Sebastian Schweinsteiger, 02 2016, Prüfening, m, [Lisa Müller;Max Mustermann;Anna Schmidt]], A
+Peter Meier, 06 2012, Prüfening, m, [Hans Zimmer], A
+Hans Zimmer, 07 2012, Prüfening, m, [Peter Meier;Peter Marquardt], A
+Peter Marquardt, 02 2012, Burgweinting, m, [Hans Zimmer;Peter Meier], A
+Markus Schweinebraten, 02 2016, Prüfening, m, [], A
+Julia Fischer, 09 2014, Burgweinting, f, [Lisa Müller], A
+101, 04 2012, Königswiesen, m, [102], A
+102, 08 2011, Königswiesen, m, [101; 103], A
+103, 05 2012, Königswiesen, f, [102], A
+104, 09 2013, Prüfening, m, [107], A
+105, 08 2013, Prüfening, m, [107], A
+106, 06 2013, Prüfening, m, [107; 105], A
+107, 04 2013, Prüfening, m, [104], A
