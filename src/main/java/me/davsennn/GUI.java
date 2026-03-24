@@ -20,11 +20,14 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 public class GUI {
     public static JFrame fenster;
 
-    public static void update() { fenster.revalidate(); fenster.repaint(); }
+    public static final Locale[] locales = new Locale[]{ Locale.ENGLISH, Locale.GERMAN };
+    public static Locale locale;
 
     private static JPanel settingsPage;
     private static JPanel peoplePage;
@@ -41,10 +44,19 @@ public class GUI {
         fenster.setLayout(new BorderLayout(10, 10));
 
         JPanel navigation = new JPanel();
-        navigation.setLayout(new BoxLayout(navigation, BoxLayout.LINE_AXIS));
+        navigation.setLayout(new BoxLayout(navigation, BoxLayout.PAGE_AXIS));
         navigation.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // navigation.setBackground(Color.BLACK);
+
+        JComboBox<Locale> localeSelector = new JComboBox<>(locales);
+        localeSelector.addActionListener(ignored -> {
+            locale = (Locale) localeSelector.getSelectedItem();
+            fenster.revalidate();
+            fenster.repaint();
+        });
+        locale = (Locale) localeSelector.getSelectedItem();
+
 
         JTabbedPane tabs = new JTabbedPane();
         buildSettingsPage();
@@ -57,6 +69,7 @@ public class GUI {
         tabs.addTab("Compute", computePage);
         // tabs.setBackground(Color.GRAY);
 
+        navigation.add(localeSelector);
         navigation.add(tabs);
 
         fenster.add(navigation, BorderLayout.NORTH);
@@ -556,7 +569,7 @@ public class GUI {
         buttons.add(export);
 
         JButton viewAll = new JButton("View All");
-        viewAll.addActionListener(ignored -> {log(Room.everywhere()); update();});
+        viewAll.addActionListener(ignored -> log(Room.everywhere()));
         buttons.add(viewAll);
 
         JButton deleteAll = new JButton("Delete All");
