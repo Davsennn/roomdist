@@ -58,10 +58,8 @@ public class GUI {
             locale = (Locale) localeSelector.getSelectedItem();
             fenster.setVisible(false);
             createWindow();
-            System.out.println(locale);
         });
         locale = (Locale) localeSelector.getSelectedItem();
-        System.out.println(locale);
         resources = ResourceBundle.getBundle("lang", locale);
 
         csvFilter = new FileNameExtensionFilter(get("desc.csvfilter"), "csv");
@@ -316,15 +314,16 @@ public class GUI {
         JButton browseButton = new JButton(get("button.browse"));
         browseButton.addActionListener(ignored -> {
             int returnVal = importFileChooser.showOpenDialog(importPanel);
-            if (returnVal == JFileChooser.APPROVE_OPTION) {
-                try {
-                    Person.addPeople(Main.parsePeople(importFileChooser.getSelectedFile()));
-                } catch (IllegalArgumentException e) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                }
-                peopleModel.fireTableDataChanged();
+            if (returnVal != JFileChooser.APPROVE_OPTION) {
+                return;
             }
+            try {
+                Person.addPeople(Main.parsePeople(importFileChooser.getSelectedFile()));
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+            }
+            peopleModel.fireTableDataChanged();
         });
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
@@ -450,21 +449,22 @@ public class GUI {
             JFileChooser saveFileChooser = new JFileChooser();
             saveFileChooser.setFileFilter(csvFilter);
             int returnValue = saveFileChooser.showSaveDialog(fenster);
-            if (returnValue == JFileChooser.APPROVE_OPTION) {
-                if (!saveFileChooser.getSelectedFile().getName().endsWith(".csv")) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.noCSVExt"), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                try {
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
-                    writer.write(Person.everyone());
-                    writer.flush();
-                    writer.close();
-                } catch (IOException e) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.exportFail"), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                }
+            if (returnValue != JFileChooser.APPROVE_OPTION) {
+                return;
+            }
+            if (!saveFileChooser.getSelectedFile().getName().endsWith(".csv")) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.noCSVExt"), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                writer.write(Person.everyone());
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.exportFail"), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
             }
         });
         buttons.add(export);
@@ -484,10 +484,7 @@ public class GUI {
         buttons.add(deleteAll);
 
         JButton everyone = new JButton(get("button.printall"));
-        everyone.addActionListener(ignored -> {
-            System.out.println(Person.getPeople().toString());
-            // System.out.println(Person.everyone());
-        });
+        everyone.addActionListener(ignored -> System.out.println(Person.getPeople().toString()));
         buttons.add(everyone);
 
 
@@ -522,8 +519,8 @@ public class GUI {
             @Override
             public Object getValueAt(int rowIndex, int columnIndex) {
                 return switch (columnIndex) {
-                    case 0 -> Room.getRooms().get(rowIndex).getId();
-                    case 1 -> Room.getRooms().get(rowIndex).getCapacity();
+                    case 0 -> Room.getRooms().get(rowIndex).id();
+                    case 1 -> Room.getRooms().get(rowIndex).capacity();
                     default -> null;
                 };
             }
@@ -544,15 +541,16 @@ public class GUI {
         JButton browseButton = new JButton(get("button.browse"));
         browseButton.addActionListener(ignored -> {
             int returnVal = importFileChooser.showOpenDialog(importPanel);
-            if (returnVal == JFileChooser.APPROVE_OPTION) {
-                try {
-                    Room.addRooms(Main.parseRooms(importFileChooser.getSelectedFile()));
-                } catch (IllegalArgumentException e) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                }
-                roomsModel.fireTableDataChanged();
+            if (returnVal != JFileChooser.APPROVE_OPTION) {
+                return;
             }
+            try {
+                Room.addRooms(Main.parseRooms(importFileChooser.getSelectedFile()));
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+            }
+            roomsModel.fireTableDataChanged();
         });
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
@@ -617,21 +615,22 @@ public class GUI {
             JFileChooser saveFileChooser = new JFileChooser();
             saveFileChooser.setFileFilter(csvFilter);
             int returnValue = saveFileChooser.showSaveDialog(fenster);
-            if (returnValue == JFileChooser.APPROVE_OPTION) {
-                if (!saveFileChooser.getSelectedFile().getName().endsWith(".csv")) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.noCSVExt"), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                try {
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
-                    writer.write(Room.everywhere());
-                    writer.flush();
-                    writer.close();
-                } catch (IOException e) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.exportFail") + " \n" + e.getMessage(), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                }
+            if (returnValue != JFileChooser.APPROVE_OPTION) {
+                return;
+            }
+            if (!saveFileChooser.getSelectedFile().getName().endsWith(".csv")) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.noCSVExt"), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                writer.write(Room.everywhere());
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.exportFail") + " \n" + e.getMessage(), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
             }
         });
         buttons.add(export);
@@ -729,33 +728,34 @@ public class GUI {
             JFileChooser saveFileChooser = new JFileChooser();
             saveFileChooser.setFileFilter(new FileNameExtensionFilter(get("desc.txtfilter"), "txt"));
             int returnValue = saveFileChooser.showSaveDialog(fenster);
-            if (returnValue == JFileChooser.APPROVE_OPTION) {
-                if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.noTXTExt"), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                    return;
+            if (returnValue != JFileChooser.APPROVE_OPTION) {
+                return;
+            }
+            if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.noTXTExt"), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                StringBuilder ret = new StringBuilder(get("exp.all"));
+                ret.append("\n\n\n");
+                for (int i = 1; i <= Main.results.length; ++i) {
+                    Result r = Main.results[10-i];
+                    ret.append(get("exp.result")).append(" #").append(i).append(" (").append(((double)((int)(r.score*100)))/100).append("): [\n");
+                    StringBuilder res = new StringBuilder("    " + Result.toString(r.config, ",\n    "));
+                    res.deleteCharAt(res.indexOf("["));
+                    res.deleteCharAt(res.length()-1).append("\n];");
+                    ret.append(res).append("\n\n");
                 }
-                try {
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
-                    StringBuilder ret = new StringBuilder(get("exp.all"));
-                    ret.append("\n\n\n");
-                    for (int i = 1; i <= Main.results.length; ++i) {
-                        Result r = Main.results[10-i];
-                        ret.append(get("exp.result")).append(" #").append(i).append(" (").append(((double)((int)(r.score*100)))/100).append("): [\n");
-                        StringBuilder res = new StringBuilder("    " + Result.toString(r.config, ",\n    "));
-                        res.deleteCharAt(res.indexOf("["));
-                        res.deleteCharAt(res.length()-1).append("\n];");
-                        ret.append(res).append("\n\n");
-                    }
-                    ret.append(get("exp.end"));
-                    writer.write(ret.toString());
-                    writer.flush();
-                    writer.close();
-                } catch (IOException e) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.exportFail") + " \n" + e.getMessage(), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                ret.append(get("exp.end"));
+                writer.write(ret.toString());
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.exportFail") + " \n" + e.getMessage(), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
 
-                }
             }
         });
         buttonPanel.add(exportAllButton);
@@ -765,25 +765,26 @@ public class GUI {
             JFileChooser saveFileChooser = new JFileChooser();
             saveFileChooser.setFileFilter(new FileNameExtensionFilter(get("desc.txtfilter"), "txt"));
             int returnValue = saveFileChooser.showSaveDialog(fenster);
-            if (returnValue == JFileChooser.APPROVE_OPTION) {
-                if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.noTXTExt"), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                try {
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
-                    StringBuilder ret = new StringBuilder();
-                    Result r = Main.results[9-resultsList.getSelectedIndex()];
-                    ret.append("Result #").append(resultsList.getSelectedIndex()).append(" (").append(((double)((int)(r.score*100)))/100).append("): \n")
-                            .append(Result.toString(r.config, ",\n")).append(";\n");
-                    writer.write(ret.toString());
-                    writer.flush();
-                    writer.close();
-                } catch (IOException e) {
-                    JOptionPane.showConfirmDialog(fenster, get("msg.exportFail") + " \n" + e.getMessage(), get("title.warn"),
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                }
+            if (returnValue != JFileChooser.APPROVE_OPTION) {
+                return;
+            }
+            if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.noTXTExt"), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                StringBuilder ret = new StringBuilder();
+                Result r = Main.results[9-resultsList.getSelectedIndex()];
+                ret.append("Result #").append(resultsList.getSelectedIndex()).append(" (").append(((double)((int)(r.score*100)))/100).append("): \n")
+                        .append(Result.toString(r.config, ",\n")).append(";\n");
+                writer.write(ret.toString());
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                JOptionPane.showConfirmDialog(fenster, get("msg.exportFail") + " \n" + e.getMessage(), get("title.warn"),
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
             }
         });
         buttonPanel.add(exportButton);

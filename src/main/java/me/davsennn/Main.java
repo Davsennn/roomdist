@@ -43,7 +43,7 @@ public class Main {
         }
     }
 
-    static void assignRoom(int roomIdx,
+    private static void assignRoom(int roomIdx,
                            List<Person> remaining,
                            List<List<Person>> current,
                            double currentScore) {
@@ -69,7 +69,7 @@ public class Main {
                 new ArrayList<>(), current, currentScore);
     }
 
-    static void buildGroup(int roomIdx,
+    private static void buildGroup(int roomIdx,
                            Room room,
                            List<Person> remaining,
                            int start,
@@ -81,10 +81,10 @@ public class Main {
 
 
         // --- IF GROUP SIZE IS USABLE ---
-        if (size >= room.getCapacity() - 2 &&
-            size <= room.getCapacity() + 1) {
+        if (size >= room.capacity() - 2 &&
+            size <= room.capacity() + 1) {
 
-            double fullScore = Room.calculateOptimality(group, room.getCapacity());
+            double fullScore = Room.calculateOptimality(group, room.capacity());
             double newScore = currentScore + fullScore;
 
             // recurse to next room
@@ -110,7 +110,7 @@ public class Main {
         }
 
         // --- STOP IF TOO BIG ---
-        if (size >= room.getCapacity() + 1) return;
+        if (size >= room.capacity() + 1) return;
 
         // --- EXTEND GROUP ---
         for (int i = start; i < remaining.size(); i++) {
@@ -190,22 +190,24 @@ public class Main {
                     continue;
                 }
                 String[] parts = line.split(",");
-                if (parts.length > 4 && !parts[4].trim().isEmpty()) {
-                    String name = parts[0].trim();
-                    String prefString = parts[4].trim();
-                    if (prefString.startsWith("[") && prefString.endsWith("]")) {
-                        String[] prefNames = prefString.substring(1, prefString.length() - 1).split(";");
-                        List<Person> preferences = Arrays.stream(prefNames)
-                                .map(String::trim)
-                                .filter(pref -> !pref.isEmpty())
-                                .map(personMap::get) // Resolve actual Person objects
-                                .filter(Objects::nonNull) // Ignore unresolved names
-                                .toList();
-                        Person person = personMap.get(name);
-                        if (person != null) {
-                            person.setPreferences(preferences); // Update preferences
-                        }
-                    }
+                if (parts.length <= 4 || parts[4].trim().isEmpty()) {
+                    continue;
+                }
+                String name = parts[0].trim();
+                String prefString = parts[4].trim();
+                if (!prefString.startsWith("[") || !prefString.endsWith("]")) {
+                    continue;
+                }
+                String[] prefNames = prefString.substring(1, prefString.length() - 1).split(";");
+                List<Person> preferences = Arrays.stream(prefNames)
+                        .map(String::trim)
+                        .filter(pref -> !pref.isEmpty())
+                        .map(personMap::get) // Resolve actual Person objects
+                        .filter(Objects::nonNull) // Ignore unresolved names
+                        .toList();
+                Person person = personMap.get(name);
+                if (person != null) {
+                    person.setPreferences(preferences); // Update preferences
                 }
             }
         } catch (IOException e) {

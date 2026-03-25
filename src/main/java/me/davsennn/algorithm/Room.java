@@ -4,30 +4,35 @@ import me.davsennn.Config;
 
 import java.util.*;
 
-public class Room {
+public record Room(String id, int capacity) {
     private static List<Room> rooms = new ArrayList<>();
     private static List<Room> lastRemoved;
+
     public static List<Room> getRooms() {
         return rooms;
     }
+
     // availableRooms.get(capacity) return how many rooms of specified capacity are left
     public static TreeMap<Integer, Integer> roomSizes = new TreeMap<>();
     public static TreeMap<Integer, Integer> availableRooms = new TreeMap<>();
     private static int maxCapacity;
+
     public static int getMaxCapacity() {
         return maxCapacity;
     }
+
     public static void finish() {
         maxCapacity = rooms.stream()
-                .map(Room::getCapacity)
+                .map(Room::capacity)
                 .max(Integer::compareTo)
                 .orElse(Integer.MAX_VALUE);
 
         roomSizes = new TreeMap<>();
         for (Room r : rooms) {
-            Room.roomSizes.merge(r.getCapacity(), 1, Integer::sum);
+            Room.roomSizes.merge(r.capacity(), 1, Integer::sum);
         }
     }
+
     public static void resetAvailableRooms() {
         availableRooms = new TreeMap<>(roomSizes);
     }
@@ -35,9 +40,9 @@ public class Room {
 
     public static void addRooms(Collection<? extends Room> rooms) {
         Room.rooms.addAll(rooms
-                        .stream()
-                        .filter(room -> !rooms.contains(room))
-                        .toList());
+                .stream()
+                .filter(room -> !rooms.contains(room))
+                .toList());
     }
 
     public static void removeRooms(int[] indices) {
@@ -99,9 +104,6 @@ public class Room {
     }
 
 
-    private final String id;
-    private final int capacity;
-
     public Room(String id, int capacity) {
         this.id = id;
         this.capacity = capacity;
@@ -109,14 +111,6 @@ public class Room {
             Room.rooms.add(this);
             Room.availableRooms.merge(this.capacity, 1, Integer::sum);
         }
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public int getCapacity() {
-        return capacity;
     }
 
     public String toString() {
