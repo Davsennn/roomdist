@@ -670,7 +670,17 @@ public class GUI {
         JPanel buttonPanel = new JPanel();
         JButton computeButton = new JButton(get("cmp.exec"));
         computeButton.addActionListener(ignored -> {
-            Main.execute();
+            try {
+                Main.execute();
+            } catch (Exception e) {
+                if (Person.getPeople() == null || Person.getPeople().isEmpty())
+                    log("msg.err", "\n", "msg.noPeople");
+                else if (Room.getRooms() == null || Room.getRooms().isEmpty())
+                    log("msg.err", "\n", "msg.noRooms");
+                else
+                    log("msg.err", "\n", e.getMessage());
+                return;
+            }
             constructDisplay();
             log.setText(
                       String.format("%,d", Main.processed) + " " + get("msg.paths") + ", "
