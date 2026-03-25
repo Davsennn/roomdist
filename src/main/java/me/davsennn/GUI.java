@@ -21,6 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 
+// @SuppressWarnings("DuplicatedCode")
 public class GUI {
     public static JFrame fenster;
     public static void update() { fenster.revalidate(); fenster.repaint(); }
@@ -38,6 +39,7 @@ public class GUI {
     private static JPanel computePage;
 
     private static FileNameExtensionFilter csvFilter;
+    private static FileNameExtensionFilter txtFilter;
 
     public static void createWindow() {
         fenster = new JFrame("roomdist Application " + Main.version);
@@ -60,10 +62,11 @@ public class GUI {
             createWindow();
         });
         locale = (Locale) localeSelector.getSelectedItem();
+        if (locale == null) locale = Locale.getDefault();
         resources = ResourceBundle.getBundle("lang", locale);
 
         csvFilter = new FileNameExtensionFilter(get("desc.csvfilter"), "csv");
-
+        txtFilter = new FileNameExtensionFilter(get("desc.txtfilter"), "txt");
 
         JTabbedPane tabs = new JTabbedPane();
         buildSettingsPage();
@@ -96,10 +99,10 @@ public class GUI {
         logDirect(ret.toString());
     }
 
-    private static JTextPane immutableText(String message, Color c) {
+    private static JTextPane immutableText(String message) {
         JTextPane ret = new JTextPane();
         StyleContext sc = StyleContext.getDefaultStyleContext();
-        AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, c);
+        AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, Color.BLACK);
 
         aset = sc.addAttribute(aset, StyleConstants.FontFamily, "Lucida Console");
         aset = sc.addAttribute(aset, StyleConstants.Alignment, StyleConstants.ALIGN_JUSTIFIED);
@@ -112,7 +115,6 @@ public class GUI {
         // ret.setBackground(Color.DARK_GRAY);
         return ret;
     }
-    private static JTextPane immutableText(String message) { return immutableText(message, Color.BLACK); }
     private static JTextPane immutableGet(String key) { return immutableText(get(key)); }
     private static void buildSettingsPage() {
         settingsPage = new JPanel();
@@ -251,6 +253,21 @@ public class GUI {
         settingsPage.add(buttons);
     }
 
+    private static File saveFile(boolean txtInsteadOfCSV) {
+        JFileChooser saveFileChooser = new JFileChooser();
+        saveFileChooser.setFileFilter(txtInsteadOfCSV ? csvFilter : txtFilter);
+        int returnValue = saveFileChooser.showSaveDialog(fenster);
+        if (returnValue != JFileChooser.APPROVE_OPTION) {
+            return null;
+        }
+        if (!saveFileChooser.getSelectedFile().getName().endsWith(txtInsteadOfCSV ? ".txt" : ".csv")) {
+            JOptionPane.showConfirmDialog(fenster, get(txtInsteadOfCSV ? "msg.noTXTExt" : "msg.noCSVExt"), get("title.warn"),
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        return saveFileChooser.getSelectedFile();
+    }
+
     private static void buildPeoplePage() {
         peoplePage = new JPanel();
         peoplePage.setLayout(new BoxLayout(peoplePage, BoxLayout.PAGE_AXIS));
@@ -331,7 +348,6 @@ public class GUI {
             Person.addPeople(Main.parsePeople(file));
             peopleModel.fireTableDataChanged();
         });
-
         importPanel.add(browseButton);
         importPanel.add(test);
         peoplePage.add(importPanel);
@@ -446,19 +462,10 @@ public class GUI {
 
         JButton export = new JButton(get("button.export"));
         export.addActionListener(ignored -> {
-            JFileChooser saveFileChooser = new JFileChooser();
-            saveFileChooser.setFileFilter(csvFilter);
-            int returnValue = saveFileChooser.showSaveDialog(fenster);
-            if (returnValue != JFileChooser.APPROVE_OPTION) {
-                return;
-            }
-            if (!saveFileChooser.getSelectedFile().getName().endsWith(".csv")) {
-                JOptionPane.showConfirmDialog(fenster, get("msg.noCSVExt"), get("title.warn"),
-                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            File file = saveFile(false);
+            if (file == null) return;
             try {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                BufferedWriter writer = new BufferedWriter(new FileWriter(file));
                 writer.write(Person.everyone());
                 writer.flush();
                 writer.close();
@@ -612,19 +619,10 @@ public class GUI {
 
         JButton export = new JButton(get("button.export"));
         export.addActionListener(ignored -> {
-            JFileChooser saveFileChooser = new JFileChooser();
-            saveFileChooser.setFileFilter(csvFilter);
-            int returnValue = saveFileChooser.showSaveDialog(fenster);
-            if (returnValue != JFileChooser.APPROVE_OPTION) {
-                return;
-            }
-            if (!saveFileChooser.getSelectedFile().getName().endsWith(".csv")) {
-                JOptionPane.showConfirmDialog(fenster, get("msg.noCSVExt"), get("title.warn"),
-                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            File file = saveFile(false);
+            if (file == null) return;
             try {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                BufferedWriter writer = new BufferedWriter(new FileWriter(file));
                 writer.write(Room.everywhere());
                 writer.flush();
                 writer.close();
@@ -725,19 +723,10 @@ public class GUI {
 
         JButton exportAllButton = new JButton(get("button.exportall"));
         exportAllButton.addActionListener(ignored -> {
-            JFileChooser saveFileChooser = new JFileChooser();
-            saveFileChooser.setFileFilter(new FileNameExtensionFilter(get("desc.txtfilter"), "txt"));
-            int returnValue = saveFileChooser.showSaveDialog(fenster);
-            if (returnValue != JFileChooser.APPROVE_OPTION) {
-                return;
-            }
-            if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
-                JOptionPane.showConfirmDialog(fenster, get("msg.noTXTExt"), get("title.warn"),
-                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            File file = saveFile(true);
+            if (file == null) return;
             try {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                BufferedWriter writer = new BufferedWriter(new FileWriter(file));
                 StringBuilder ret = new StringBuilder(get("exp.all"));
                 ret.append("\n\n\n");
                 for (int i = 1; i <= Main.results.length; ++i) {
@@ -762,19 +751,10 @@ public class GUI {
 
         JButton exportButton = new JButton(get("button.export"));
         exportButton.addActionListener(ignored -> {
-            JFileChooser saveFileChooser = new JFileChooser();
-            saveFileChooser.setFileFilter(new FileNameExtensionFilter(get("desc.txtfilter"), "txt"));
-            int returnValue = saveFileChooser.showSaveDialog(fenster);
-            if (returnValue != JFileChooser.APPROVE_OPTION) {
-                return;
-            }
-            if (!saveFileChooser.getSelectedFile().getName().endsWith(".txt")) {
-                JOptionPane.showConfirmDialog(fenster, get("msg.noTXTExt"), get("title.warn"),
-                        JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            File file = saveFile(true);
+            if (file == null) return;
             try {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(saveFileChooser.getSelectedFile()));
+                BufferedWriter writer = new BufferedWriter(new FileWriter(file));
                 StringBuilder ret = new StringBuilder();
                 Result r = Main.results[9-resultsList.getSelectedIndex()];
                 ret.append("Result #").append(resultsList.getSelectedIndex()).append(" (").append(((double)((int)(r.score*100)))/100).append("): \n")
