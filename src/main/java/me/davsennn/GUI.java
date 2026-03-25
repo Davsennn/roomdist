@@ -257,7 +257,7 @@ public class GUI {
         peoplePage = new JPanel();
         peoplePage.setLayout(new BoxLayout(peoplePage, BoxLayout.PAGE_AXIS));
 
-        AbstractTableModel model = new AbstractTableModel() {
+        AbstractTableModel peopleModel = new AbstractTableModel() {
             @Override
             public int getRowCount() {
                 return Person.getPeople().size();
@@ -283,27 +283,27 @@ public class GUI {
 
             @Override
             public Object getValueAt(int rowIndex, int columnIndex) {
-                List<Person> people = Person.getPeople();
+                Person[] people = Person.getPeopleSorted();
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-uuuu");
                 return switch (columnIndex) {
-                    case 0 -> people.get(rowIndex).getGroup();
-                    case 1 -> people.get(rowIndex).getName();
-                    case 2 -> people.get(rowIndex).getBirth().format(formatter);
-                    case 3 -> people.get(rowIndex).getGender();
-                    case 4 -> people.get(rowIndex).getLocation();
-                    case 5 -> Result.toStringList(people.get(rowIndex).getPreferences());
+                    case 0 -> people[rowIndex].getGroup();
+                    case 1 -> people[rowIndex].getName();
+                    case 2 -> people[rowIndex].getBirth().format(formatter);
+                    case 3 -> people[rowIndex].getGender();
+                    case 4 -> people[rowIndex].getLocation();
+                    case 5 -> Result.toStringList(people[rowIndex].getPreferences());
                     default -> null;
                 };
             }
         };
-        JTable table = new JTable(model);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        table.getColumnModel().getColumn(0).setPreferredWidth(40);
-        table.getColumnModel().getColumn(1).setPreferredWidth(180);
-        table.getColumnModel().getColumn(2).setPreferredWidth(50);
-        table.getColumnModel().getColumn(3).setPreferredWidth(50);
-        table.getColumnModel().getColumn(4).setPreferredWidth(150);
-        table.getColumnModel().getColumn(5).setPreferredWidth(500);
+        JTable peopleTable = new JTable(peopleModel);
+        peopleTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        peopleTable.getColumnModel().getColumn(0).setPreferredWidth(40);
+        peopleTable.getColumnModel().getColumn(1).setPreferredWidth(180);
+        peopleTable.getColumnModel().getColumn(2).setPreferredWidth(50);
+        peopleTable.getColumnModel().getColumn(3).setPreferredWidth(50);
+        peopleTable.getColumnModel().getColumn(4).setPreferredWidth(150);
+        peopleTable.getColumnModel().getColumn(5).setPreferredWidth(500);
 
         JPanel importPanel = new JPanel();
         JTextPane importText = immutableGet("ppl.import");
@@ -323,14 +323,14 @@ public class GUI {
                     JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                 }
-                model.fireTableDataChanged();
+                peopleModel.fireTableDataChanged();
             }
         });
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
             File file = new File(ROOT + "\\src\\main\\resources\\people.csv");
             Person.addPeople(Main.parsePeople(file));
-            model.fireTableDataChanged();
+            peopleModel.fireTableDataChanged();
         });
 
         importPanel.add(browseButton);
@@ -411,7 +411,7 @@ public class GUI {
                 }
 
                 new Person(namev, birthv, locationv, genderv, preferencesv, groupv);
-                model.fireTableDataChanged();
+                peopleModel.fireTableDataChanged();
             } catch (Exception e) {
                 log(get("msg.err") + " \n" + e.getMessage());
             }
@@ -428,6 +428,23 @@ public class GUI {
         peoplePage.add(manualPanel);
 
         JPanel buttons = new JPanel();
+        JButton delete = new JButton(get("button.delete"));
+        delete.addActionListener(ignored -> {
+            int[] rows = peopleTable.getSelectedRows();
+            if (rows.length == 0)
+                log("msg.noPeopleSelected");
+            Person.removePeople(peopleTable.getSelectedRows());
+            peopleModel.fireTableDataChanged();
+        });
+        buttons.add(delete);
+
+        JButton restore = new JButton(get("button.restore"));
+        restore.addActionListener(ignored -> {
+            Person.restore();
+            peopleModel.fireTableDataChanged();
+        });
+        buttons.add(restore);
+
         JButton export = new JButton(get("button.export"));
         export.addActionListener(ignored -> {
             JFileChooser saveFileChooser = new JFileChooser();
@@ -453,7 +470,7 @@ public class GUI {
         buttons.add(export);
 
         JButton viewAll = new JButton(get("button.viewall"));
-        viewAll.addActionListener(ignored -> log(Person.everyone()));
+        viewAll.addActionListener(ignored -> logDirect(Person.everyone()));
         buttons.add(viewAll);
 
         JButton deleteAll = new JButton(get("button.deleteall"));
@@ -475,14 +492,14 @@ public class GUI {
 
 
         peoplePage.add(buttons);
-        peoplePage.add(new JScrollPane(table));
+        peoplePage.add(new JScrollPane(peopleTable));
     }
 
     private static void buildRoomsPage() {
         roomsPage = new JPanel();
         roomsPage.setLayout(new BoxLayout(roomsPage, BoxLayout.PAGE_AXIS));
 
-        AbstractTableModel model = new AbstractTableModel() {
+        AbstractTableModel roomsModel = new AbstractTableModel() {
             @Override
             public int getRowCount() {
                 return Room.getRooms().size();
@@ -511,10 +528,10 @@ public class GUI {
                 };
             }
         };
-        JTable table = new JTable(model);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        table.getColumnModel().getColumn(0).setPreferredWidth(150);
-        table.getColumnModel().getColumn(1).setPreferredWidth(60);
+        JTable roomsTable = new JTable(roomsModel);
+        roomsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        roomsTable.getColumnModel().getColumn(0).setPreferredWidth(150);
+        roomsTable.getColumnModel().getColumn(1).setPreferredWidth(60);
 
         JPanel importPanel = new JPanel();
         JTextPane importText = immutableGet("rms.import");
@@ -534,14 +551,14 @@ public class GUI {
                     JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
                             JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
                 }
-                model.fireTableDataChanged();
+                roomsModel.fireTableDataChanged();
             }
         });
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
             File file = new File(ROOT + "\\src\\main\\resources\\rooms.csv");
             Room.addRooms(Main.parseRooms(file));
-            model.fireTableDataChanged();
+            roomsModel.fireTableDataChanged();
         });
         importPanel.add(browseButton);
         importPanel.add(test);
@@ -571,13 +588,30 @@ public class GUI {
             String roomIdv = roomId.getText().trim();
             int capacityv = (int) capacity.getValue();
             new Room(roomIdv, capacityv);
-            model.fireTableDataChanged();
+            roomsModel.fireTableDataChanged();
         });
         manualPanel.add(manualAdd);
 
         roomsPage.add(manualPanel);
 
         JPanel buttons = new JPanel();
+        JButton delete = new JButton(get("button.delete"));
+        delete.addActionListener(ignored -> {
+            int[] rows = roomsTable.getSelectedRows();
+            if (rows.length == 0)
+                log("msg.noRoomsSelected");
+            Room.removeRooms(rows);
+            roomsModel.fireTableDataChanged();
+        });
+        buttons.add(delete);
+
+        JButton restore = new JButton(get("button.restore"));
+        restore.addActionListener(ignored -> {
+            Room.restore();
+            roomsModel.fireTableDataChanged();
+        });
+        buttons.add(restore);
+
         JButton export = new JButton(get("button.export"));
         export.addActionListener(ignored -> {
             JFileChooser saveFileChooser = new JFileChooser();
@@ -612,7 +646,7 @@ public class GUI {
                     get("title.confirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (returnValue == JOptionPane.YES_OPTION) {
                 Room.clearRooms();
-                model.fireTableDataChanged();
+                roomsModel.fireTableDataChanged();
             }
         });
         buttons.add(deleteAll);
@@ -623,7 +657,7 @@ public class GUI {
 
         roomsPage.add(buttons);
 
-        roomsPage.add(new JScrollPane(table));
+        roomsPage.add(new JScrollPane(roomsTable));
 
     }
 

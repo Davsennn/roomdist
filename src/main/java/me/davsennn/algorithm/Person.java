@@ -6,12 +6,20 @@ import java.time.YearMonth;
 import java.util.*;
 
 public class Person implements Comparable<Person> {
+    // static methods
     public static final YearMonth now = YearMonth.now();
 
     private static List<Person> people = new ArrayList<>();
+    private static List<Person> lastRemoved;
 
     public static List<Person> getPeople() {
         return people;
+    }
+
+    public static Person[] getPeopleSorted() {
+        Person[] ret = people.toArray(new Person[0]);
+        Arrays.sort(ret);
+        return ret;
     }
 
     public static void addPeople(Collection<? extends Person> people) {
@@ -20,6 +28,23 @@ public class Person implements Comparable<Person> {
                             .filter(p -> !people.contains(p))
                             .toList());
         // prevent duplicates by name
+    }
+
+    public static void removePeople(int[] people) {
+        Person[] people1 = Person.getPeopleSorted();
+        List<Person> remove = new ArrayList<>(people.length);
+        for (int i : people) {
+            remove.add(people1[i]);
+        }
+        lastRemoved = remove;
+        System.out.println(lastRemoved);
+        Person.people.removeAll(remove);
+    }
+
+    public static void restore() {
+        if (lastRemoved == null) return;
+        people.addAll(lastRemoved);
+        lastRemoved = null;
     }
 
     public static void clearPeople() {
@@ -38,11 +63,11 @@ public class Person implements Comparable<Person> {
         if (people.isEmpty()) return "[]";
         StringBuilder ret = new StringBuilder(
                 "{name}, {birth}[MM YYYY], {location}, {gender}[\"f\"|\"m\"|\"d\"], {preferences}[\"[name1;name2; ...]\"\"], {group}\n");
-        for (Person p : people) ret.append(p.toString()).append("\n");
+        for (Person p : getPeopleSorted()) ret.append(p.toString()).append("\n");
         return ret.toString();
     }
 
-    private final UUID id;
+    // Instance
     private final String name;
     private final YearMonth birth;
     private final String location;
@@ -53,10 +78,6 @@ public class Person implements Comparable<Person> {
 
     public void setPreferences(List<Person> preferences) {
         this.preferences = preferences;
-    }
-
-    public UUID getId() {
-        return id;
     }
 
     public String getName() {
@@ -85,7 +106,7 @@ public class Person implements Comparable<Person> {
 
     @Override
     public int compareTo(Person other) {
-        return getId().compareTo(other.getId());
+        return getName().compareTo(other.getName());
     }
 
     public Person(String name, YearMonth birth, String location, char gender, List<Person> preferences, char group) {
@@ -95,7 +116,6 @@ public class Person implements Comparable<Person> {
         this.gender = gender;
         this.preferences = preferences;
         this.group = group;
-        this.id = UUID.randomUUID();
         people.add(this);
     }
 
@@ -124,6 +144,7 @@ public class Person implements Comparable<Person> {
         return String.format("%1$s, %2$tm %2$tY, %3$s, %4$s, %5$s%6$s", name, birth, location, gender, prefstring, group);
     }
 
+    // Calculation
     public static double calculatePreferenceScore(List<Person> ppl, Map<Person[], Double> custom_bonuses) {
         if (!(Config.getPreferenceBonus() >= 0))
             Config.setDefaults();

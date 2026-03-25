@@ -6,6 +6,7 @@ import java.util.*;
 
 public class Room {
     private static List<Room> rooms = new ArrayList<>();
+    private static List<Room> lastRemoved;
     public static List<Room> getRooms() {
         return rooms;
     }
@@ -37,6 +38,20 @@ public class Room {
                         .stream()
                         .filter(room -> !rooms.contains(room))
                         .toList());
+    }
+
+    public static void removeRooms(int[] indices) {
+        List<Room> remove = new ArrayList<>(indices.length);
+        for (int i : indices)
+            remove.add(rooms.get(i));
+        lastRemoved = remove;
+        rooms.removeAll(remove);
+    }
+
+    public static void restore() {
+        if (lastRemoved == null) return;
+        rooms.addAll(lastRemoved);
+        lastRemoved = null;
     }
 
     public static void clearRooms() {
