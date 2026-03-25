@@ -92,7 +92,7 @@ public class GUI {
     private static void log(String... keys) {
         StringBuilder ret = new StringBuilder();
         for (String key : keys) {
-            ret.append(key.equals("\n") ? "\n" : get(key)).append("\n");
+            ret.append(key.isEmpty() ? "" : get(key)).append("\n");
         }
         ret.deleteCharAt(ret.length()-1);
         logDirect(ret.toString());
@@ -239,7 +239,7 @@ public class GUI {
                 "desc.largeAgeDiff",
                 "desc.sameLocation",
                 "desc.sameGender",
-                "\n",
+                "",
                 "desc.roomwise",
                 "desc.largeGroup",
                 "desc.underoccupancy",
@@ -637,7 +637,7 @@ public class GUI {
         buttons.add(export);
 
         JButton viewAll = new JButton(get("button.viewall"));
-        viewAll.addActionListener(ignored -> log(Room.everywhere()));
+        viewAll.addActionListener(ignored -> logDirect(Room.everywhere()));
         buttons.add(viewAll);
 
         JButton deleteAll = new JButton(get("button.deleteall"));
@@ -708,11 +708,11 @@ public class GUI {
                 Main.execute();
             } catch (Exception e) {
                 if (Person.getPeople() == null || Person.getPeople().isEmpty())
-                    log("msg.err", "\n", "msg.noPeople");
+                    log("msg.err", "", "msg.noPeople");
                 else if (Room.getRooms() == null || Room.getRooms().isEmpty())
-                    log("msg.err", "\n", "msg.noRooms");
+                    log("msg.err", "", "msg.noRooms");
                 else
-                    log("msg.err", "\n", e.getMessage());
+                    log("msg.err", "", e.getMessage());
                 return;
             }
             constructDisplay();
