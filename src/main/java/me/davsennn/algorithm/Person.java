@@ -155,10 +155,9 @@ public class Person implements Comparable<Person> {
                 if (ageDiff >= Config.getAgeDifferenceThreshold())          score -= ageDiff * Config.getAgeDifferencePenalty();
                 if (ageDiff >= Config.getLargeAgeDifferenceThreshold())     score -= ageDiff * Config.getLargeAgeDifferencePenalty();
 
-
-                if (custom_bonuses != null && custom_bonuses.containsKey(new Person[]{p, q})) {
-                    score += custom_bonuses.get(new Person[]{p, q});
-                }
+                Person[] pq = new Person[]{p, q};
+                if (custom_bonuses != null && custom_bonuses.containsKey(pq))
+                    score += custom_bonuses.get(pq);
             }
 
             if (p.ageDiffYears(now) <= Config.getLargeGroupAgeLimit() &&
