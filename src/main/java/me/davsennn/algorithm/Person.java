@@ -11,6 +11,7 @@ public class Person implements Comparable<Person> {
 
     private static List<Person> people = new ArrayList<>();
     private static List<Person> lastRemoved;
+    public static Map<Person[], Double> custom_bonuses;
 
     public static List<Person> getPeople() {
         return people;
@@ -145,7 +146,7 @@ public class Person implements Comparable<Person> {
     }
 
     // Calculation
-    public static double calculatePreferenceScore(List<Person> ppl, Map<Person[], Double> custom_bonuses) {
+    public static double calculatePreferenceScore(List<Person> ppl) {
         if (!(Config.getPreferenceBonus() >= 0))
             Config.setDefaults();
 

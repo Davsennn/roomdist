@@ -130,7 +130,7 @@ public class Room {
         if (group.size() > capacity + 1) {
             return Double.NEGATIVE_INFINITY; // Group exceeds room capacity
         }
-        double score = Person.calculatePreferenceScore(group, null);
+        double score = Person.calculatePreferenceScore(group);
         score += group.size() * Config.getLargeGroupBonus(); // Bonus for larger groups
         if (group.size() < capacity - 2)
             score -= Config.getUnderOccupancyPenalty() * (capacity - group.size()); // Penalty for under-occupancy
