@@ -1,6 +1,7 @@
 package me.davsennn;
 
 import me.davsennn.algorithm.Person;
+import me.davsennn.algorithm.PersonPair;
 import me.davsennn.algorithm.Result;
 import me.davsennn.algorithm.Room;
 
@@ -12,6 +13,7 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import java.awt.*;
+import java.awt.event.ItemEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -20,6 +22,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 // @SuppressWarnings("DuplicatedCode")
 public class GUI {
@@ -35,6 +38,7 @@ public class GUI {
 
     private static JPanel settingsPage;
     private static JPanel peoplePage;
+    private static JPanel bonusesPage;
     private static JPanel roomsPage;
     private static JPanel computePage;
 
@@ -71,10 +75,12 @@ public class GUI {
         JTabbedPane tabs = new JTabbedPane();
         buildSettingsPage();
         buildPeoplePage();
+        buildBonusesPage();
         buildRoomsPage();
         buildComputePage();
         tabs.addTab(get("title.settings"), settingsPage);
         tabs.addTab(get("title.people"), peoplePage);
+        tabs.addTab(get("title.bonuses"), bonusesPage);
         tabs.addTab(get("title.rooms"), roomsPage);
         tabs.addTab(get("title.compute"), computePage);
         // tabs.setBackground(Color.GRAY);
@@ -97,6 +103,11 @@ public class GUI {
         }
         ret.deleteCharAt(ret.length()-1);
         logDirect(ret.toString());
+    }
+
+    private static int ask(String message) {
+        return JOptionPane.showConfirmDialog(fenster, message,
+                get("title.confirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     }
 
     private static JTextPane immutableText(String message) {
@@ -341,12 +352,14 @@ public class GUI {
                         JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
             }
             peopleModel.fireTableDataChanged();
+            firePeopleChange();
         });
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
             File file = new File(ROOT + "\\src\\main\\resources\\people.csv");
             Person.addPeople(Main.parsePeople(file));
             peopleModel.fireTableDataChanged();
+            firePeopleChange();
         });
         importPanel.add(browseButton);
         importPanel.add(test);
@@ -408,8 +421,7 @@ public class GUI {
                 char groupv = group.getText().charAt(0);
                 String namev = name.getText().trim();
                 if (Person.fromName(namev) != null &&
-                    JOptionPane.showConfirmDialog(fenster, namev + " " + get("msg.personAlreadyExists"),
-                    get("title.confirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.NO_OPTION) return;
+                    ask(namev + " " + get("msg.personAlreadyExists")) == JOptionPane.NO_OPTION) return;
 
                 YearMonth birthv = YearMonth.of((int) birthYear.getValue(), (int) birthMonth.getValue());
                 String locationv = location.getText().trim();
@@ -427,6 +439,7 @@ public class GUI {
 
                 new Person(namev, birthv, locationv, genderv, preferencesv, groupv);
                 peopleModel.fireTableDataChanged();
+                firePeopleChange();
             } catch (Exception e) {
                 log(get("msg.err") + " \n" + e.getMessage());
             }
@@ -450,6 +463,7 @@ public class GUI {
                 log("msg.noPeopleSelected");
             Person.removePeople(peopleTable.getSelectedRows());
             peopleModel.fireTableDataChanged();
+            firePeopleChange();
         });
         buttons.add(delete);
 
@@ -457,6 +471,7 @@ public class GUI {
         restore.addActionListener(ignored -> {
             Person.restore();
             peopleModel.fireTableDataChanged();
+            firePeopleChange();
         });
         buttons.add(restore);
 
@@ -482,11 +497,11 @@ public class GUI {
 
         JButton deleteAll = new JButton(get("button.deleteall"));
         deleteAll.addActionListener(ignored -> {
-            int returnValue = JOptionPane.showConfirmDialog(fenster, get("msg.deletePpl"),
-                    get("title.confirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-            if (returnValue == JOptionPane.YES_OPTION) {
+            if (ask(get("msg.deletePpl")) == JOptionPane.YES_OPTION) {
                 Person.clearPeople();
             }
+            peopleModel.fireTableDataChanged();
+            firePeopleChange();
         });
         buttons.add(deleteAll);
 
@@ -497,6 +512,125 @@ public class GUI {
 
         peoplePage.add(buttons);
         peoplePage.add(new JScrollPane(peopleTable));
+    }
+
+    static DefaultListModel<String> peopleListModel = new DefaultListModel<>();
+    static JList<String> peopleList = new JList<>(peopleListModel);
+    static void firePeopleChange() { peopleListModel.clear(); peopleListModel.addAll(Arrays.stream(Person.getPeopleSorted()).map(Person::getName).toList()); }
+    private static void buildBonusesPage() {
+        Person.custom_bonuses = new LinkedHashMap<>();
+
+        bonusesPage = new JPanel();
+        bonusesPage.setLayout(new BoxLayout(bonusesPage, BoxLayout.PAGE_AXIS));
+
+        JPanel titlePanel = new JPanel();
+        titlePanel.add(immutableGet("cbs.title"));
+        bonusesPage.add(titlePanel);
+
+        JPanel centralPanel = new JPanel();
+        centralPanel.setLayout(new FlowLayout());
+
+        centralPanel.add(new JScrollPane(peopleList));
+        peopleList.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        JPanel manualPanel = new JPanel();
+        manualPanel.setLayout(new BoxLayout(manualPanel, BoxLayout.Y_AXIS));
+
+        JTextArea p1 = new JTextArea(); p1.setPreferredSize(new Dimension(200, 20));
+        JTextArea p2 = new JTextArea(); p2.setPreferredSize(new Dimension(200, 20));
+        JSpinner score = new JSpinner(new SpinnerNumberModel(0.0, -999.0, 999.0, 0.1));
+        JCheckBox isNegativeInfinity = new JCheckBox(get("cbs.negativeInfinity"));
+        AtomicBoolean selected = new AtomicBoolean(false);
+        isNegativeInfinity.addItemListener(i -> selected.set(i.getStateChange() == ItemEvent.SELECTED));
+        JPanel p1Panel = new JPanel(); p1Panel.add(immutableText("1")); p1Panel.add(p1);
+        manualPanel.add(p1Panel);
+        JPanel p2Panel = new JPanel(); p2Panel.add(immutableText("2")); p2Panel.add(p2);
+        manualPanel.add(p2Panel);
+        JPanel scorePanel = new JPanel(); scorePanel.add(immutableGet("cbs.score")); scorePanel.add(score);
+        manualPanel.add(scorePanel);
+        isNegativeInfinity.setToolTipText(get("cbs.negInfTooltip"));
+        manualPanel.add(isNegativeInfinity);
+
+        centralPanel.add(manualPanel);
+
+        AbstractTableModel bonusesModel = new AbstractTableModel() {
+            @Override
+            public int getRowCount() {
+                return Person.custom_bonuses.size();
+            }
+
+            @Override
+            public int getColumnCount() {
+                return 3;
+            }
+
+            @Override
+            public Object getValueAt(int rowIndex, int columnIndex) {
+                return switch (columnIndex) {
+                    case 0 -> Person.custom_bonuses.sequencedKeySet().toArray(new PersonPair[0])[rowIndex].a().getName();
+                    case 1 -> Person.custom_bonuses.sequencedKeySet().toArray(new PersonPair[0])[rowIndex].b().getName();
+                    case 2 -> Person.custom_bonuses.sequencedValues().toArray()[rowIndex];
+                    default -> "";
+                };
+            }
+
+            @Override
+            public String getColumnName(int columnIndex) {
+                return switch (columnIndex) {
+                    case 0 -> "p1";
+                    case 1 -> "p2";
+                    case 2 -> get("cbs.score");
+                    default -> "";
+                };
+            }
+        };
+        JTable bonusesTable = new JTable(bonusesModel);
+        bonusesTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+        JPanel addButtonPanel = new JPanel();
+        JButton addButton = new JButton(get("button.add"));
+        addButton.addActionListener(ignored -> {
+            Person p1v = Person.fromName(p1.getText());
+            Person p2v = Person.fromName(p2.getText());
+            double scorev = selected.get() ? Double.NEGATIVE_INFINITY : (double) score.getValue();
+            if (p1v == null)
+                { logDirect(get("msg.err") + "\n" + p1.getText() + " " + get("msg.personDoesNotExist")); return; }
+            if (p2v == null)
+                { logDirect(get("msg.err") + "\n" + p2.getText() + " " + get("msg.personDoesNotExist")); return; }
+            PersonPair p1p2 = new PersonPair(p1v, p2v);
+            if (Person.custom_bonuses.containsKey(p1p2)) {
+                if (ask(get("msg.pairHasValue")) == JOptionPane.YES_OPTION)
+                    Person.custom_bonuses.replace(p1p2, scorev); }
+            else Person.custom_bonuses.put(p1p2, scorev);
+            //System.out.println(Person.custom_bonuses.keySet().stream().findAny().get()[0].getName());
+            bonusesModel.fireTableDataChanged();
+        });
+        addButtonPanel.add(addButton);
+
+        centralPanel.add(addButtonPanel);
+
+        bonusesPage.add(centralPanel);
+
+        JPanel buttonPanel = new JPanel();
+        JButton deleteButton = new JButton(get("button.delete"));
+
+        deleteButton.addActionListener(ignored -> {
+            int[] rows = bonusesTable.getSelectedRows();
+            if (rows.length == 0)
+                log("msg.noPairsSelected");
+            List<PersonPair> remove = new ArrayList<>(rows.length);
+            for (int i : rows) {
+                remove.add(Person.custom_bonuses.sequencedKeySet().toArray(new PersonPair[0])[i]);
+            }
+            for (PersonPair key : remove) {
+                Person.custom_bonuses.remove(key);
+            }
+            bonusesModel.fireTableDataChanged();
+        });
+        buttonPanel.add(deleteButton);
+
+        bonusesPage.add(buttonPanel);
+        bonusesPage.add(new JScrollPane(bonusesTable));
     }
 
     private static void buildRoomsPage() {
@@ -639,9 +773,7 @@ public class GUI {
 
         JButton deleteAll = new JButton(get("button.deleteall"));
         deleteAll.addActionListener(ignored -> {
-            int returnValue = JOptionPane.showConfirmDialog(fenster, get("msg.deleteRooms"),
-                    get("title.confirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-            if (returnValue == JOptionPane.YES_OPTION) {
+            if (ask(get("msg.deleteRooms")) == JOptionPane.YES_OPTION) {
                 Room.clearRooms();
                 roomsModel.fireTableDataChanged();
             }

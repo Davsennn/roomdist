@@ -11,7 +11,7 @@ public class Person implements Comparable<Person> {
 
     private static List<Person> people = new ArrayList<>();
     private static List<Person> lastRemoved;
-    public static Map<Person[], Double> custom_bonuses;
+    public static LinkedHashMap<PersonPair, Double> custom_bonuses;
 
     public static List<Person> getPeople() {
         return people;
@@ -177,9 +177,12 @@ public class Person implements Comparable<Person> {
                 if (ageDiff >= Config.getAgeDifferenceThreshold())          score -= ageDiff * Config.getAgeDifferencePenalty();
                 if (ageDiff >= Config.getLargeAgeDifferenceThreshold())     score -= ageDiff * Config.getLargeAgeDifferencePenalty();
 
-                Person[] pq = new Person[]{p, q};
-                if (custom_bonuses != null && custom_bonuses.containsKey(pq))
-                    score += custom_bonuses.get(pq);
+                PersonPair pq = new PersonPair(p, q);
+                if (custom_bonuses != null && custom_bonuses.containsKey(pq)) {
+                    double customScore = custom_bonuses.get(pq);
+                    if (customScore == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+                    else score += customScore / 2;
+                }
             }
 
             if (p.ageDiffYears(now) <= Config.getLargeGroupAgeLimit() &&
