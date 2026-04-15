@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 // @SuppressWarnings("DuplicatedCode")
-public class GUI {
+public final class GUI {
     public static JFrame fenster;
     public static void update() { fenster.revalidate(); fenster.repaint(); }
 
@@ -797,7 +797,7 @@ public class GUI {
         public int getRowCount() {
             if (Main.results == null) return 0;
             if (resultsList.getSelectedIndex() == -1) return 0;
-            return Main.results[resultsList.getSelectedIndex()].config.size();
+            return Main.results[resultsList.getSelectedIndex()].config().size();
         }
 
         @Override
@@ -808,8 +808,8 @@ public class GUI {
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             return switch (columnIndex) {
-                case 0 ->                     Main.results[9-resultsList.getSelectedIndex()].config.get(rowIndex).size();
-                case 1 -> Result.toStringList(Main.results[9-resultsList.getSelectedIndex()].config.get(rowIndex)).substring(2).replace(']', ' ');
+                case 0 ->                     Main.results[9-resultsList.getSelectedIndex()].config().get(rowIndex).size();
+                case 1 -> Result.toStringList(Main.results[9-resultsList.getSelectedIndex()].config().get(rowIndex)).substring(2).replace(']', ' ');
                 default -> "";
             };
         }
@@ -863,8 +863,8 @@ public class GUI {
                 ret.append("\n\n\n");
                 for (int i = 1; i <= Main.results.length; ++i) {
                     Result r = Main.results[10-i];
-                    ret.append(get("exp.result")).append(" #").append(i).append(" (").append(((double)((int)(r.score*100)))/100).append("): [\n");
-                    StringBuilder res = new StringBuilder("    " + Result.toString(r.config, ",\n    "));
+                    ret.append(get("exp.result")).append(" #").append(i).append(" (").append(((double)((int)(r.score()*100)))/100).append("): [\n");
+                    StringBuilder res = new StringBuilder("    " + Result.toString(r.config(), ",\n    "));
                     res.deleteCharAt(res.indexOf("["));
                     res.deleteCharAt(res.length()-1).append("\n];");
                     ret.append(res).append("\n\n");
@@ -889,8 +889,8 @@ public class GUI {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(file));
                 StringBuilder ret = new StringBuilder();
                 Result r = Main.results[9-resultsList.getSelectedIndex()];
-                ret.append("Result #").append(resultsList.getSelectedIndex()).append(" (").append(((double)((int)(r.score*100)))/100).append("): \n")
-                        .append(Result.toString(r.config, ",\n")).append(";\n");
+                ret.append("Result #").append(resultsList.getSelectedIndex()).append(" (").append(((double)((int)(r.score()*100)))/100).append("): \n")
+                        .append(Result.toString(r.config(), ",\n")).append(";\n");
                 writer.write(ret.toString());
                 writer.flush();
                 writer.close();
@@ -925,7 +925,7 @@ public class GUI {
     static void constructDisplay() {
         model.clear();
         for (int i = 1; i <= Main.results.length; ++i) {
-            model.addElement(get("exp.result") + " #" + i + " ("+ ((double)((int)(Main.results[10-i].score*100)))/100 + ")");
+            model.addElement(String.format("%1$s #%2$d (%3$+5.4g)", get("exp.result"), i, Main.results[10-i].score()));
         }
         resultsList.setSelectedIndex(0);
     }
