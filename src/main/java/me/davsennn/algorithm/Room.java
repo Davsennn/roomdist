@@ -8,14 +8,14 @@ public record Room(String id, int capacity) {
     private static List<Room> rooms = new ArrayList<>();
     private static List<Room> lastRemoved;
 
-    public static List<Room> getRooms() {
-        return rooms;
-    }
-
     // availableRooms.get(capacity) return how many rooms of specified capacity are left
     public static TreeMap<Integer, Integer> roomSizes = new TreeMap<>();
     public static TreeMap<Integer, Integer> availableRooms = new TreeMap<>();
     private static int maxCapacity;
+
+    public static List<Room> getRooms() {
+        return rooms;
+    }
 
     public static int getMaxCapacity() {
         return maxCapacity;
