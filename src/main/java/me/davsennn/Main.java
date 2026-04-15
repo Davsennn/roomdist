@@ -27,7 +27,7 @@ public class Main {
         startTime = System.nanoTime();
         // split(Person.getPeople(), Room.getRooms().size());
         Room.finish();
-        resultPriorityQueue = new PriorityQueue<>(11, (a, b) -> 2*Double.compare(a.score, b.score) - a.id.compareTo(b.id));
+        resultPriorityQueue = new PriorityQueue<>(11);
         System.out.println("Starting...");
         assignRoom(0, Person.getPeople(), new ArrayList<>(), 0);
         endTime = System.nanoTime();
@@ -37,9 +37,9 @@ public class Main {
                 + String.format("%,d", (endTime - startTime)%1000000L) + "ns");
         System.out.println("TOP 10 (" + resultPriorityQueue.size() + ")");
         results = resultPriorityQueue.toArray(new Result[10]);
-        Arrays.sort(results, Comparator.comparingDouble(r -> r.score));
+        Arrays.sort(results);
         for (int i = results.length - 1; i >= 0; --i) {
-            System.out.println(String.format("%+5.4g", results[i].score) + " | " + results[i]);
+            System.out.println(String.format("%+5.4g", results[i].score()) + " | " + results[i]);
         }
     }
 
@@ -97,7 +97,7 @@ public class Main {
                 Result best = resultPriorityQueue.peek();
                 double s;
                 if (best != null) {
-                    s = Person.calculateOptimality(best.config);
+                    s = Person.calculateOptimality(best.config());
                     System.out.printf("D%1$02d | %2$,4dM | %4$4.4f | %3$s %n", roomIdx, processed/1000000, best, s);
                 } else {
                     s = Person.calculateOptimality(current);

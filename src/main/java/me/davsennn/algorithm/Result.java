@@ -4,21 +4,27 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 
-public class Result {
-    public List<List<Person>> config;
-    public double score;
-    public UUID id;
-
-    public Result(List<List<Person>> config, double score) {
-        this.config = config;
-        this.score = score;
-        this.id = UUID.nameUUIDFromBytes(
-                        ByteBuffer.allocate(Integer.BYTES)
+public record Result(List<List<Person>> config, double score) implements Comparable<Result> {
+    public UUID id() {
+        return UUID.nameUUIDFromBytes(
+                ByteBuffer.allocate(Integer.BYTES)
                         .putInt(config.hashCode()).array());
     }
-
+    
+    @Override
     public String toString() {
-        return Result.toString(config);
+        return Result.toString(config());
+    }
+
+    @Override
+    public int compareTo(Result other) {
+        return 2*Double.compare(this.score(), other.score()) - this.id().compareTo(other.id());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Result)) return false;
+        return this.id().equals(((Result) o).id());
     }
 
     public static String toString(List<List<Person>> config) {
