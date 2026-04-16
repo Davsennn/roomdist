@@ -1,4 +1,4 @@
-{name}, {birth}[MM YYYY], {location}, {gender}["f"|"m"|"d"], {preferences}["[name1;name2; ...]""], {group}
+{name}, {birth}[MM YYYY], {location}, {gender}["f"|"m"|"d"], {preferences}["[name1;name2; ...]"], {group}
 Lisa Müller, 03 2015, Burgweinting, f, [Max Mustermann], A
 Max Mustermann, 05 2015, Prüfening, m, [], A
 Anna Schmidt, 11 2014, Burgweinting, f, [Lisa Müller;Max Mustermann], A
