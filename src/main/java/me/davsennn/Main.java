@@ -126,7 +126,7 @@ public class Main {
      * Parses a CSV file to create a list of Person objects.
      * The CSV format is expected to be:
      * <pre>
-     * {name}, {birth}[MM YYYY], {location}, {gender}["f"|"m"|"d"], {preferences}["[name1;name2; ...]""], {group}
+     * {name}, {birth}[MM YYYY], {location}, {gender}["f"|"m"|"d"], {preferences}["[name1;name2; ...]"], {group}
      * </pre>
      * @param csv the CSV file to parse
      * @return a list of Person objects created from the CSV data
