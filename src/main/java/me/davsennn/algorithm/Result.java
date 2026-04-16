@@ -4,11 +4,11 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 
-public record Result(List<List<Person>> config, double score) implements Comparable<Result> {
-    public UUID id() {
-        return UUID.nameUUIDFromBytes(
-                ByteBuffer.allocate(Integer.BYTES)
-                        .putInt(config.hashCode()).array());
+public record Result(List<List<Person>> config, double score, UUID id) implements Comparable<Result> {
+    public Result(List<List<Person>> config, double score) {
+        this(config, score, UUID.nameUUIDFromBytes(
+                        ByteBuffer.allocate(Integer.BYTES)
+                        .putInt(config.hashCode()).array()));
     }
     
     @Override
@@ -18,7 +18,10 @@ public record Result(List<List<Person>> config, double score) implements Compara
 
     @Override
     public int compareTo(Result other) {
-        return 2*Double.compare(this.score(), other.score()) - this.id().compareTo(other.id());
+        double scorediff = Double.compare(this.score(), other.score());
+        if (scorediff == 0) return -this.id().compareTo(other.id());
+        else if (scorediff < 0) return -1;
+        else return +1;
     }
 
     @Override

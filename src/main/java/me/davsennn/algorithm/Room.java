@@ -5,12 +5,12 @@ import me.davsennn.Config;
 import java.util.*;
 
 public record Room(String id, int capacity) {
-    private static List<Room> rooms = new ArrayList<>();
+    private static final List<Room> rooms = new ArrayList<>();
     private static List<Room> lastRemoved;
 
     // availableRooms.get(capacity) return how many rooms of specified capacity are left
-    public static TreeMap<Integer, Integer> roomSizes = new TreeMap<>();
-    public static TreeMap<Integer, Integer> availableRooms = new TreeMap<>();
+    private static TreeMap<Integer, Integer> roomSizes = new TreeMap<>();
+    private static TreeMap<Integer, Integer> availableRooms = new TreeMap<>();
     private static int maxCapacity;
 
     public static List<Room> getRooms() {
@@ -60,7 +60,7 @@ public record Room(String id, int capacity) {
     }
 
     public static void clearRooms() {
-        rooms = new ArrayList<>();
+        rooms.clear();
     }
 
     public static String everywhere() {
@@ -125,7 +125,6 @@ public record Room(String id, int capacity) {
             return Double.NEGATIVE_INFINITY; // Group exceeds room capacity
         }
         double score = Person.calculatePreferenceScore(group);
-        score += group.size() * Config.getLargeGroupBonus(); // Bonus for larger groups
         if (group.size() < capacity - 2)
             score -= Config.getUnderOccupancyPenalty() * (capacity - group.size()); // Penalty for under-occupancy
         if (group.size() == capacity + 1)

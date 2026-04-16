@@ -1,7 +1,6 @@
 package me.davsennn;
 
-public class Config {
-
+public final class Config {
     private static double   PREFERENCE_BONUS;
     private static double   NON_PREFERENCE_PENALTY;
     private static double   UNFULFILLED_PREFERENCE_PENALTY;
@@ -21,21 +20,21 @@ public class Config {
     private static double   LARGE_GROUP_AGE_LIMIT;
 
     public static void setDefaults() {
-        setPreferenceBonus(2.0);
-        setNonPreferencePenalty(0.5);
-        setUnfulfilledPreferencePenalty(4.0);
-        setMutualPreferenceBonus(10.0);
+        setPreferenceBonus(4.0);
+        setNonPreferencePenalty(0.0);
+        setUnfulfilledPreferencePenalty(6.0);
+        setMutualPreferenceBonus(15.0);
         setAgeDifferencePenalty(1.0);
         setLargeAgeDifferencePenalty(2.0);
         setSameLocationBonus(1.0);
-        setSameGenderBonus(2.0);
+        setSameGenderBonus(0.5);
 
         setLargeGroupBonus(0.0);
         setUnderoccupancyPenalty(1.0);
         setCriticalOccupancyPenalty(10.0);
 
         setAgeDifferenceThreshold(2.0);
-        setLargeAgeDifferenceThreshold(3.0);
+        setLargeAgeDifferenceThreshold(3.5);
         setLargeGroupSizeThreshold(4);
         setLargeGroupAgeLimit(10.0);
     }
@@ -160,6 +159,49 @@ public class Config {
 
     public static void setLargeGroupAgeLimit(double largeGroupAgeLimit) {
         LARGE_GROUP_AGE_LIMIT = largeGroupAgeLimit;
+    }
+
+    // PortableConfig represents all age-related values by months.
+    public record PortableConfig(
+            double   PREFERENCE_BONUS,
+            double   NON_PREFERENCE_PENALTY,
+            double   UNFULFILLED_PREFERENCE_PENALTY,
+            double   MUTUAL_PREFERENCE_BONUS,
+            double   AGE_DIFFERENCE_PENALTY,
+            double   LARGE_AGE_DIFFERENCE_PENALTY,
+            double   SAME_LOCATION_BONUS,
+            double   SAME_GENDER_BONUS,
+
+            double   LARGE_GROUP_BONUS,
+            double   CRITICAL_OCCUPANCY_PENALTY,
+            double   UNDER_OCCUPANCY_PENALTY,
+
+            int      AGE_DIFFERENCE_THRESHOLD,
+            int      LARGE_AGE_DIFFERENCE_THRESHOLD,
+            int      LARGE_GROUP_SIZE_THRESHOLD,
+            int      LARGE_GROUP_AGE_LIMIT
+    ) {
+        public PortableConfig() {
+            this(
+                Config.PREFERENCE_BONUS,
+                Config.NON_PREFERENCE_PENALTY,
+                Config.UNFULFILLED_PREFERENCE_PENALTY,
+                Config.MUTUAL_PREFERENCE_BONUS,
+                Config.AGE_DIFFERENCE_PENALTY / 12,
+                Config.LARGE_AGE_DIFFERENCE_PENALTY / 12,
+                Config.SAME_LOCATION_BONUS,
+                Config.SAME_GENDER_BONUS,
+
+                Config.LARGE_GROUP_BONUS,
+                Config.CRITICAL_OCCUPANCY_PENALTY,
+                Config.UNDER_OCCUPANCY_PENALTY,
+
+                (int) (Config.AGE_DIFFERENCE_THRESHOLD * 12 + 0.5), // add 0.5 because int cast always rounds down
+                (int) (Config.LARGE_AGE_DIFFERENCE_THRESHOLD * 12 + 0.5),
+                       Config.LARGE_GROUP_SIZE_THRESHOLD,
+                (int) (Config.LARGE_GROUP_AGE_LIMIT * 12 + 0.5)
+            );
+        }
     }
 
 }

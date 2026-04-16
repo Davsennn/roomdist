@@ -99,6 +99,7 @@ public final class GUI {
     private static void log(String... keys) {
         StringBuilder ret = new StringBuilder();
         for (String key : keys) {
+            if (!key.isEmpty() && key.charAt(0) == '%') { ret.append(key); System.out.println(key); continue; }
             ret.append(key.isEmpty() ? "" : get(key)).append("\n");
         }
         ret.deleteCharAt(ret.length()-1);
@@ -136,14 +137,14 @@ public final class GUI {
         pairParamSettings.setLayout(new GridLayout(8, 3, 10, 5));
         // pairParamSettings.setBackground(Color.DARK_GRAY);
 
-        JSpinner preferenceSelector =           new JSpinner(new SpinnerNumberModel(Config.getPreferenceBonus()             , -999.0, 999.0, 0.5));
-        JSpinner nonPreferenceSelector =        new JSpinner(new SpinnerNumberModel(Config.getNonPreferencePenalty()        , -999.0, 999.0, 0.5));
-        JSpinner unfulfilledPreferenceSelector =new JSpinner(new SpinnerNumberModel(Config.getUnfulfilledPreferencePenalty(), -999.0, 999.0, 0.5));
-        JSpinner mutualPreferenceSelector =     new JSpinner(new SpinnerNumberModel(Config.getMutualPreferenceBonus()       , -999.0, 999.0, 0.5));
-        JSpinner ageDifferenceSelector =        new JSpinner(new SpinnerNumberModel(Config.getAgeDifferencePenalty()        , -999.0, 999.0, 0.5));
-        JSpinner largeAgeDifferenceSelector =   new JSpinner(new SpinnerNumberModel(Config.getLargeAgeDifferencePenalty()   , -999.0, 999.0, 0.5));
-        JSpinner locationSelector =             new JSpinner(new SpinnerNumberModel(Config.getSameLocationBonus()           , -999.0, 999.0, 0.5));
-        JSpinner genderSelector =               new JSpinner(new SpinnerNumberModel(Config.getSameGenderBonus()             , -999.0, 999.0, 0.5));
+        JSpinner preferenceSelector =           new JSpinner(new SpinnerNumberModel(Config.getPreferenceBonus()             , -999.0, 999.0, 0.1));
+        JSpinner nonPreferenceSelector =        new JSpinner(new SpinnerNumberModel(Config.getNonPreferencePenalty()        , -999.0, 999.0, 0.1));
+        JSpinner unfulfilledPreferenceSelector =new JSpinner(new SpinnerNumberModel(Config.getUnfulfilledPreferencePenalty(), -999.0, 999.0, 0.1));
+        JSpinner mutualPreferenceSelector =     new JSpinner(new SpinnerNumberModel(Config.getMutualPreferenceBonus()       , -999.0, 999.0, 0.1));
+        JSpinner ageDifferenceSelector =        new JSpinner(new SpinnerNumberModel(Config.getAgeDifferencePenalty()        , -999.0, 999.0, 0.1));
+        JSpinner largeAgeDifferenceSelector =   new JSpinner(new SpinnerNumberModel(Config.getLargeAgeDifferencePenalty()   , -999.0, 999.0, 0.1));
+        JSpinner locationSelector =             new JSpinner(new SpinnerNumberModel(Config.getSameLocationBonus()           , -999.0, 999.0, 0.1));
+        JSpinner genderSelector =               new JSpinner(new SpinnerNumberModel(Config.getSameGenderBonus()             , -999.0, 999.0, 0.1));
 
         pairParamSettings.add(immutableGet("set.preference"));               pairParamSettings.add(preferenceSelector);          pairParamSettings.add(immutableGet("set.pts"));
         pairParamSettings.add(immutableGet("set.nonPreference"));         pairParamSettings.add(nonPreferenceSelector);       pairParamSettings.add(immutableGet("set.pts"));
@@ -506,7 +507,7 @@ public final class GUI {
         buttons.add(deleteAll);
 
         JButton everyone = new JButton(get("button.printall"));
-        everyone.addActionListener(ignored -> System.out.println(Person.getPeople().toString()));
+        everyone.addActionListener(ignored -> System.out.println(Person.getPeople()));
         buttons.add(everyone);
 
 
@@ -514,8 +515,8 @@ public final class GUI {
         peoplePage.add(new JScrollPane(peopleTable));
     }
 
-    static DefaultListModel<String> peopleListModel = new DefaultListModel<>();
-    static JList<String> peopleList = new JList<>(peopleListModel);
+    static final DefaultListModel<String> peopleListModel = new DefaultListModel<>();
+    static final JList<String> peopleList = new JList<>(peopleListModel);
     static void firePeopleChange() { peopleListModel.clear(); peopleListModel.addAll(Arrays.stream(Person.getPeopleSorted()).map(Person::getName).toList()); }
     private static void buildBonusesPage() {
         Person.custom_bonuses = new LinkedHashMap<>();
@@ -781,7 +782,7 @@ public final class GUI {
         buttons.add(deleteAll);
 
         JButton everyone = new JButton(get("button.printall"));
-        everyone.addActionListener(ignored -> System.out.println(Room.getRooms().toString()));
+        everyone.addActionListener(ignored -> System.out.println(Room.getRooms()));
         buttons.add(everyone);
 
         roomsPage.add(buttons);
@@ -790,9 +791,9 @@ public final class GUI {
 
     }
 
-    static DefaultListModel<String> model = new DefaultListModel<>();
-    static JList<String> resultsList = new JList<>(model);
-    static AbstractTableModel dataModel = new AbstractTableModel() {
+    static final DefaultListModel<String> model = new DefaultListModel<>();
+    static final JList<String> resultsList = new JList<>(model);
+    static final AbstractTableModel dataModel = new AbstractTableModel() {
         @Override
         public int getRowCount() {
             if (Main.results == null) return 0;
@@ -833,22 +834,23 @@ public final class GUI {
         JPanel buttonPanel = new JPanel();
         JButton computeButton = new JButton(get("cmp.exec"));
         computeButton.addActionListener(ignored -> {
+            log.setText("See console log for progres information");
+            update();
             try {
                 Main.execute();
             } catch (Exception e) {
-                if (Person.getPeople() == null || Person.getPeople().isEmpty())
+                if (Person.getPeople().isEmpty())
                     log("msg.err", "", "msg.noPeople");
-                else if (Room.getRooms() == null || Room.getRooms().isEmpty())
+                else if (Room.getRooms().isEmpty())
                     log("msg.err", "", "msg.noRooms");
                 else
-                    log("msg.err", "", e.getMessage());
+                    log("msg.err", "", "%"+e.getMessage());
                 return;
             }
             constructDisplay();
-            log.setText(
-                      String.format("%,d", Main.processed) + " " + get("msg.paths") + ", "
-                    + String.format("%,d", (Main.endTime - Main.startTime)/1000000L) + "ms " + get("msg.ms") + " + "
-                    + String.format("%,d", (Main.endTime - Main.startTime)%1000000L) + "ns");
+            long diff = Main.endTime - Main.startTime;
+            log.setText(String.format("Execution stopped. %1$,d Paths processed, %2$,dms elapsed + %3$,dns (%4$,d Paths/sec)%n",
+                    Main.processed, diff/1000000L, diff%1000000L, (Main.processed*1000000000L/diff)));
             update();
         });
         buttonPanel.add(computeButton);
@@ -863,7 +865,7 @@ public final class GUI {
                 ret.append("\n\n\n");
                 for (int i = 1; i <= Main.results.length; ++i) {
                     Result r = Main.results[10-i];
-                    ret.append(get("exp.result")).append(" #").append(i).append(" (").append(((double)((int)(r.score()*100)))/100).append("): [\n");
+                    ret.append(String.format("%1$s #%2$d (%3$+4.5g): [%n", get("exp.result"), i, r.score()));
                     StringBuilder res = new StringBuilder("    " + Result.toString(r.config(), ",\n    "));
                     res.deleteCharAt(res.indexOf("["));
                     res.deleteCharAt(res.length()-1).append("\n];");
@@ -887,11 +889,10 @@ public final class GUI {
             if (file == null) return;
             try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-                StringBuilder ret = new StringBuilder();
                 Result r = Main.results[9-resultsList.getSelectedIndex()];
-                ret.append("Result #").append(resultsList.getSelectedIndex()).append(" (").append(((double)((int)(r.score()*100)))/100).append("): \n")
-                        .append(Result.toString(r.config(), ",\n")).append(";\n");
-                writer.write(ret.toString());
+                writer.write(
+                        String.format("Result #%1$d (%2$+4.5g): %n%3$s;%n", resultsList.getSelectedIndex(), r.score(), Result.toString(r.config(), ",\n"))
+                );
                 writer.flush();
                 writer.close();
             } catch (IOException e) {

@@ -1,16 +1,6 @@
 package me.davsennn.algorithm;
 
 public record PersonPair(Person a, Person b) implements Comparable<PersonPair> {
-    public PersonPair(Person a, Person b) {
-        if (a.compareTo(b) < 0) {
-            this.a = b;
-            this.b = a;
-        } else {
-            this.a = a;
-            this.b = b;
-        }
-    }
-
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof PersonPair(Person a1, Person b1))) return false;

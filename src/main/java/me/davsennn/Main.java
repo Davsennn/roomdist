@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
-public class Main {
+public final class Main {
     public static final String version = "0.2.0";
 
     static void main() {
@@ -27,14 +27,15 @@ public class Main {
         startTime = System.nanoTime();
         // split(Person.getPeople(), Room.getRooms().size());
         Room.finish();
+        if (!(Config.getPreferenceBonus() >= 0))
+            Config.setDefaults();
+        Person.updateConfig();
         resultPriorityQueue = new PriorityQueue<>(11);
         System.out.println("Starting...");
         assignRoom(0, Person.getPeople(), new ArrayList<>(), 0);
         endTime = System.nanoTime();
-        System.out.println("Execution stopped. "
-                + String.format("%,d", processed) + " Paths processed, "
-                + String.format("%,d", (endTime - startTime)/1000000L) + "ms elapsed + "
-                + String.format("%,d", (endTime - startTime)%1000000L) + "ns");
+        System.out.printf("Execution stopped. %1$,d Paths processed, %2$,dms elapsed + %3$,dns (%4$,d Paths/sec)%n",
+                processed, (endTime - startTime)/1000000L, (endTime - startTime)%1000000L, (processed*1000000000L/(endTime - startTime)));
         System.out.println("TOP 10 (" + resultPriorityQueue.size() + ")");
         results = resultPriorityQueue.toArray(new Result[10]);
         Arrays.sort(results);
@@ -53,7 +54,7 @@ public class Main {
 
         if (roomIdx == Room.getRooms().size() || remaining.isEmpty()) {
             if (remaining.isEmpty()) {
-                resultPriorityQueue.add(new Result(new ArrayList<>(current), Person.calculateOptimality(current)));
+                resultPriorityQueue.add(new Result(new ArrayList<>(current), currentScore));
                 if (resultPriorityQueue.size() >= 11) {
                     resultPriorityQueue.remove();
                 }
@@ -93,15 +94,12 @@ public class Main {
             List<Person> newRemaining = new ArrayList<>(remaining);
             newRemaining.removeAll(group);
             processed++;
-            if (processed % 1000000 == 0) {
+            if (processed % 5000000 == 0) {
                 Result best = resultPriorityQueue.peek();
                 double s;
                 if (best != null) {
                     s = Person.calculateOptimality(best.config());
-                    System.out.printf("D%1$02d | %2$,4dM | %4$4.4f | %3$s %n", roomIdx, processed/1000000, best, s);
-                } else {
-                    s = Person.calculateOptimality(current);
-                    System.out.printf("D%1$02d | %2$,4dM | %4$4.4f | %3$s %n", roomIdx, processed/1000000, current, s);
+                    System.out.printf("%1$,4dM | %3$4.4f | %2$s %n", processed/1000000, best, s);
                 }
             }
             assignRoom(roomIdx + 1, newRemaining, current, newScore);
@@ -115,6 +113,12 @@ public class Main {
         // --- EXTEND GROUP ---
         for (int i = start; i < remaining.size(); i++) {
             Person p = remaining.get(i);
+
+            if (roomIdx <= 0 && size != 0) { // prune early
+                int doPrefer = 0;
+                for (Person q : group) if (p.prefers(q)) ++doPrefer;
+                if (size <= 3 && doPrefer == 0) continue;
+            }
 
             group.add(p);
             buildGroup(roomIdx, room, remaining, i + 1, group, current, currentScore);

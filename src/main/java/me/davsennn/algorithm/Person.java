@@ -5,17 +5,22 @@ import me.davsennn.Config;
 import java.time.YearMonth;
 import java.util.*;
 
+// name must be unique
 public class Person implements Comparable<Person> {
     // static methods
-    public static final YearMonth now = YearMonth.now();
+    public static final int now = YearMonth.now().getYear()*12 + YearMonth.now().getMonthValue();
 
-    private static List<Person> people = new ArrayList<>();
+    private static final List<Person> people = new ArrayList<>();
     private static List<Person> lastRemoved;
+    private static final Map<Short, String> locationMap = new HashMap<>();
     public static LinkedHashMap<PersonPair, Double> custom_bonuses;
+
+    private static Config.PortableConfig config = new Config.PortableConfig();
 
     public static List<Person> getPeople() {
         return people;
     }
+    public static void updateConfig() { config = new Config.PortableConfig(); }
 
     public static Person[] getPeopleSorted() {
         Person[] ret = people.toArray(new Person[0]);
@@ -49,7 +54,8 @@ public class Person implements Comparable<Person> {
     }
 
     public static void clearPeople() {
-        Person.people = new ArrayList<>();
+        Person.people.clear();
+        Person.locationMap.clear();
     }
 
     public static Person fromName(String name) {
@@ -70,8 +76,8 @@ public class Person implements Comparable<Person> {
 
     // Instance
     private final String name;
-    private final YearMonth birth;
-    private final String location;
+    private final int birthMonth; // Distance in months from birth month to Jan 0 CE
+    private final short location;
     private final char gender; // 'm' for male, 'f' for female, 'd' for diverse
     private final char group;
 
@@ -86,10 +92,18 @@ public class Person implements Comparable<Person> {
     }
 
     public YearMonth getBirth() {
-        return birth;
+        return YearMonth.of(birthMonth / 12, birthMonth % 12);
+    }
+
+    public int getBirthMonth() {
+        return birthMonth;
     }
 
     public String getLocation() {
+        return locationMap.get(this.location);
+    }
+
+    public short getLocationCode() {
         return location;
     }
 
@@ -111,25 +125,31 @@ public class Person implements Comparable<Person> {
     }
 
     public Person(String name, YearMonth birth, String location, char gender, List<Person> preferences, char group) {
+        Optional<Short> idx = locationMap.keySet().stream().min(Short::compareTo);
+        short nextKey = idx.isPresent() ? (short) (idx.get() + 1) : 0;
+        locationMap.put(nextKey, location);
+
         this.name = name;
-        this.birth = birth;
-        this.location = location;
+        this.birthMonth = birth.getYear()*12 + birth.getMonthValue();
+        this.location = nextKey;
         this.gender = gender;
         this.preferences = preferences;
         this.group = group;
         people.add(this);
     }
 
-    public float ageDiffYears(YearMonth other) {
-        return Math.abs((this.birth.getYear() - other.getYear()) + (float) (this.birth.getMonthValue() - other.getMonthValue()) /12);
+    public int ageDiffMonths(int other) {
+        return Math.abs(birthMonth - other);
     }
 
     public boolean prefers(Person other) {
         return preferences.contains(other);
     }
 
-    public boolean mutualPreference(Person other) {
-        return prefers(other) && other.prefers(this);
+    @Override
+    public boolean equals (Object o) {
+        if (!(o instanceof Person)) return false;
+        return name.equals(((Person) o).name);
     }
 
     @Override
@@ -142,14 +162,11 @@ public class Person implements Comparable<Person> {
             prefstring.deleteCharAt(prefstring.length() - 1);
         }
         prefstring.append("], ");
-        return String.format("%1$s, %2$tm %2$tY, %3$s, %4$s, %5$s%6$s", name, birth, location, gender, prefstring, group);
+        return String.format("%1$s, %2$tm %2$tY, %3$s, %4$s, %5$s%6$s", name, getBirth(), location, gender, prefstring, group);
     }
 
     // Calculation
     public static double calculatePreferenceScore(List<Person> ppl) {
-        if (!(Config.getPreferenceBonus() >= 0))
-            Config.setDefaults();
-
         if (ppl == null || ppl.size() < 2)
             return 0;
 
@@ -157,25 +174,28 @@ public class Person implements Comparable<Person> {
             return Double.NEGATIVE_INFINITY;
 
         double score = 0.0;
+        boolean applyLargeGroupBonus = true;
 
         for (Person p : ppl) {
             int noPreferences = p.getPreferences().size();
 
             for (Person q : ppl) {
-                if (p.prefers(q)) --noPreferences;
-
                 if (p.equals(q)) continue;
                 if (p.getGroup() != q.getGroup()) return Double.NEGATIVE_INFINITY;
 
-                double ageDiff = p.ageDiffYears(q.getBirth());
+                boolean pref = p.prefers(q);
+                if (pref) --noPreferences;
 
-                if (p.mutualPreference(q))                      score += Config.getMutualPreferenceBonus() / 2;
-                else if (p.prefers(q))                          score += Config.getPreferenceBonus();
-                else                                            score -= Config.getNonPreferencePenalty();
-                if (p.getLocation().equals(q.getLocation()))    score += Config.getSameLocationBonus();
-                if (p.getGender() == q.getGender())             score += Config.getSameGenderBonus();
-                if (ageDiff >= Config.getAgeDifferenceThreshold())          score -= ageDiff * Config.getAgeDifferencePenalty();
-                if (ageDiff >= Config.getLargeAgeDifferenceThreshold())     score -= ageDiff * Config.getLargeAgeDifferencePenalty();
+                int ageDiff = p.ageDiffMonths(q.getBirthMonth());
+
+                if (pref)                                       score += q.prefers(p) ?
+                                                                         config.MUTUAL_PREFERENCE_BONUS()/2 :
+                                                                         config.PREFERENCE_BONUS();
+                else                                            score -= config.NON_PREFERENCE_PENALTY();
+                if (p.getLocationCode() == q.getLocationCode()) score += config.SAME_LOCATION_BONUS();
+                if (p.getGender() == q.getGender())             score += config.SAME_GENDER_BONUS();
+                if (ageDiff >= config.AGE_DIFFERENCE_THRESHOLD())         { score -= ageDiff * config.AGE_DIFFERENCE_PENALTY();
+                if (ageDiff >= config.LARGE_AGE_DIFFERENCE_THRESHOLD())     score -= ageDiff * config.LARGE_AGE_DIFFERENCE_PENALTY(); }
 
                 PersonPair pq = new PersonPair(p, q);
                 if (custom_bonuses != null && custom_bonuses.containsKey(pq)) {
@@ -185,12 +205,12 @@ public class Person implements Comparable<Person> {
                 }
             }
 
-            if (p.ageDiffYears(now) <= Config.getLargeGroupAgeLimit() &&
-                ppl.size() >= Config.getLargeGroupSizeThreshold())          score += Config.getLargeGroupBonus() * ppl.size();
+            if (p.ageDiffMonths(now) > config.LARGE_GROUP_AGE_LIMIT()) applyLargeGroupBonus = false;
 
-
-            score -= noPreferences * Config.getUnfulfilledPreferencePenalty(); // Penalize for unfulfilled preferences
+            score -= noPreferences * config.UNFULFILLED_PREFERENCE_PENALTY(); // Penalize for unfulfilled preferences
         }
+        if (applyLargeGroupBonus && ppl.size() <= config.LARGE_GROUP_SIZE_THRESHOLD())
+            score += config.LARGE_GROUP_BONUS() * ppl.size();
 
         score /= (ppl.size() - 1); // Normalize score by number of comparisons
         return score;
