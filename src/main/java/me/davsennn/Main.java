@@ -27,12 +27,6 @@ public final class Main {
         processed = 0;
         startTime = System.nanoTime();
         // split(Person.getPeople(), Room.getRooms().size());
-        Room.finish();
-        if (!(Config.getPreferenceBonus() >= 0))
-            Config.setDefaults();
-        Person.updateConfig();
-        config = new Config.PortableConfig();
-        resultPriorityQueue = new PriorityQueue<>(11);
         System.out.println("Starting...");
         assignRoom(0, Person.getPeople(), new ArrayList<>(), 0);
         endTime = System.nanoTime();
@@ -44,6 +38,15 @@ public final class Main {
         for (int i = results.length - 1; i >= 0; --i) {
             System.out.println(String.format("%+5.4g", results[i].score()) + " | " + results[i]);
         }
+    }
+
+    private static void init() {
+        Room.finish();
+        if (!(Config.getPreferenceBonus() >= 0))
+            Config.setDefaults();
+        Person.updateConfig();
+        config = new Config.PortableConfig();
+        resultPriorityQueue = new PriorityQueue<>(11);
     }
 
     private static void assignRoom(int roomIdx,
