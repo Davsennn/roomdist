@@ -11,6 +11,7 @@ import java.util.*;
 
 public final class Main {
     public static final String version = "0.2.0";
+    private static Config.PortableConfig config;
 
     static void main() {
         Config.setDefaults();
@@ -30,6 +31,7 @@ public final class Main {
         if (!(Config.getPreferenceBonus() >= 0))
             Config.setDefaults();
         Person.updateConfig();
+        config = new Config.PortableConfig();
         resultPriorityQueue = new PriorityQueue<>(11);
         System.out.println("Starting...");
         assignRoom(0, Person.getPeople(), new ArrayList<>(), 0);
@@ -114,10 +116,10 @@ public final class Main {
         for (int i = start; i < remaining.size(); i++) {
             Person p = remaining.get(i);
 
-            if (roomIdx <= 0 && size != 0) { // prune early
+            if (config.USE_EARLY_PRUNING() && roomIdx <= config.EARLY_PRUNING_LENGTH() && size != 0) { // prune early
                 int doPrefer = 0;
                 for (Person q : group) if (p.prefers(q)) ++doPrefer;
-                if (size <= 3 && doPrefer == 0) continue;
+                if (size <= config.EARLY_PRUNING_STRENGTH() && doPrefer == 0) continue;
             }
 
             group.add(p);

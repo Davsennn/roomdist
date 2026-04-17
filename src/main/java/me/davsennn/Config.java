@@ -19,6 +19,10 @@ public final class Config {
     private static int      LARGE_GROUP_SIZE_THRESHOLD;
     private static double   LARGE_GROUP_AGE_LIMIT;
 
+    private static boolean  USE_EARLY_PRUNING;
+    private static int      EARLY_PRUNING_STRENGTH;
+    private static int      EARLY_PRUNING_LENGTH;
+
     public static void setDefaults() {
         setPreferenceBonus(4.0);
         setNonPreferencePenalty(0.0);
@@ -37,6 +41,10 @@ public final class Config {
         setLargeAgeDifferenceThreshold(3.5);
         setLargeGroupSizeThreshold(4);
         setLargeGroupAgeLimit(10.0);
+
+        setUseEarlyPruning(true);
+        setEarlyPruningStrength(3);
+        setEarlyPruningLength(0);
     }
 
     public static double getPreferenceBonus() {
@@ -161,6 +169,30 @@ public final class Config {
         LARGE_GROUP_AGE_LIMIT = largeGroupAgeLimit;
     }
 
+    public static boolean getUseEarlyPruning() {
+        return USE_EARLY_PRUNING;
+    }
+
+    public static void setUseEarlyPruning(boolean useEarlyPruning) {
+        USE_EARLY_PRUNING = useEarlyPruning;
+    }
+
+    public static int getEarlyPruningStrength() {
+        return EARLY_PRUNING_STRENGTH;
+    }
+
+    public static void setEarlyPruningStrength(int earlyPruningStrength) {
+        EARLY_PRUNING_STRENGTH = earlyPruningStrength;
+    }
+
+    public static int getEarlyPruningLength() {
+        return EARLY_PRUNING_LENGTH;
+    }
+
+    public static void setEarlyPruningLength(int earlyPruningLength) {
+        EARLY_PRUNING_LENGTH = earlyPruningLength;
+    }
+
     // PortableConfig represents all age-related values by months.
     public record PortableConfig(
             double   PREFERENCE_BONUS,
@@ -179,7 +211,11 @@ public final class Config {
             int      AGE_DIFFERENCE_THRESHOLD,
             int      LARGE_AGE_DIFFERENCE_THRESHOLD,
             int      LARGE_GROUP_SIZE_THRESHOLD,
-            int      LARGE_GROUP_AGE_LIMIT
+            int      LARGE_GROUP_AGE_LIMIT, 
+
+            boolean  USE_EARLY_PRUNING,
+            int      EARLY_PRUNING_STRENGTH,
+            int      EARLY_PRUNING_LENGTH
     ) {
         public PortableConfig() {
             this(
@@ -199,7 +235,11 @@ public final class Config {
                 (int) (Config.AGE_DIFFERENCE_THRESHOLD * 12 + 0.5), // add 0.5 because int cast always rounds down
                 (int) (Config.LARGE_AGE_DIFFERENCE_THRESHOLD * 12 + 0.5),
                        Config.LARGE_GROUP_SIZE_THRESHOLD,
-                (int) (Config.LARGE_GROUP_AGE_LIMIT * 12 + 0.5)
+                (int) (Config.LARGE_GROUP_AGE_LIMIT * 12 + 0.5),
+
+                Config.USE_EARLY_PRUNING,
+                Config.EARLY_PRUNING_STRENGTH,
+                Config.EARLY_PRUNING_LENGTH
             );
         }
     }
