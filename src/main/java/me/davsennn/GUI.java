@@ -834,7 +834,7 @@ public final class GUI {
         JPanel buttonPanel = new JPanel();
         JButton computeButton = new JButton(get("cmp.exec"));
         computeButton.addActionListener(ignored -> {
-            log.setText("See console log for progres information");
+            log.setText(get("msg.seeConsoleLog"));
             update();
             try {
                 Main.execute();
@@ -849,7 +849,7 @@ public final class GUI {
             }
             constructDisplay();
             long diff = Main.endTime - Main.startTime;
-            log.setText(String.format("Execution stopped. %1$,d Paths processed, %2$,dms elapsed + %3$,dns (%4$,d Paths/sec)%n",
+            log.setText(String.format(get("msg.performanceReport"),
                     Main.processed, diff/1000000L, diff%1000000L, (Main.processed*1000000000L/diff)));
             update();
         });
