@@ -188,6 +188,27 @@ public final class GUI {
         ageSettings.add(immutableGet("set.largeGroupAgeLimit"));            ageSettings.add(largeGroupAgeLimitSelector);            ageSettings.add(immutableGet("set.years"));
 
         settingsPage.add(ageSettings);
+
+        JPanel pruneSettings = new JPanel();
+        pruneSettings.setLayout(new GridLayout(2, 3, 10, 5));
+
+        JCheckBox useEarlyPruningSelector = new JCheckBox(get("set.useEarlyPrune"), true);
+        JSpinner earlyPruningStrengthSelector = new JSpinner(new SpinnerNumberModel(Config.getEarlyPruningStrength(), 0, 999, 1));
+        JSpinner earlyPruningLengthSelector = new JSpinner(new SpinnerNumberModel(Config.getEarlyPruningLength(), 0, 999, 1));
+
+        AtomicBoolean useEarlyPruningValue = new AtomicBoolean(true);
+        useEarlyPruningSelector.addItemListener(i -> {
+            boolean isEnabled = i.getStateChange() == ItemEvent.SELECTED;
+            useEarlyPruningValue.set(isEnabled);
+            earlyPruningStrengthSelector.setEnabled(isEnabled);
+            earlyPruningLengthSelector.setEnabled(isEnabled);
+        });
+
+        settingsPage.add(useEarlyPruningSelector);
+        pruneSettings.add(immutableGet("set.earlyPruneStrength"));  pruneSettings.add(earlyPruningStrengthSelector);    pruneSettings.add(immutableGet("set.prefs"));
+        pruneSettings.add(immutableGet("set.earlyPruneLength"));    pruneSettings.add(earlyPruningLengthSelector);      pruneSettings.add(immutableGet("set.iterations"));
+
+        settingsPage.add(pruneSettings);
         settingsPage.add(Box.createVerticalStrut(20));
 
         JPanel buttons = new JPanel();
@@ -214,6 +235,10 @@ public final class GUI {
             largeGroupSizeThresholdSelector.setValue(Config.getLargeGroupSizeThreshold());
             largeGroupAgeLimitSelector.setValue(Config.getLargeGroupAgeLimit());
 
+            useEarlyPruningSelector.getModel().setSelected(Config.getUseEarlyPruning());
+            earlyPruningStrengthSelector.setValue(Config.getEarlyPruningStrength());
+            earlyPruningLengthSelector.setValue(Config.getEarlyPruningLength());
+
             log("msg.reset");
         });
 
@@ -237,6 +262,10 @@ public final class GUI {
             Config.setLargeGroupSizeThreshold((int) largeGroupSizeThresholdSelector.getValue());
             Config.setLargeGroupAgeLimit((double) largeGroupAgeLimitSelector.getValue());
 
+            Config.setUseEarlyPruning(useEarlyPruningValue.get());
+            Config.setEarlyPruningStrength((int) earlyPruningStrengthSelector.getValue());
+            Config.setEarlyPruningLength((int) earlyPruningLengthSelector.getValue());
+
             log("msg.set");
         });
 
@@ -255,7 +284,9 @@ public final class GUI {
                 "desc.roomwise",
                 "desc.largeGroup",
                 "desc.underoccupancy",
-                "desc.criticalOccupancy"
+                "desc.criticalOccupancy",
+                "",
+                "desc.pruning"
         ));
 
         buttons.add(infoButton);
