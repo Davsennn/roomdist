@@ -2,4 +2,6 @@
 Divide many people into groups of specified sizes with preferences and weights.
 </br>
 TODO: 
-- None
+- Finish resource usage in compute page
+- Add early prune toggle in settings
+- Update lang.resources
