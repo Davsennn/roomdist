@@ -127,7 +127,7 @@ public class Person implements Comparable<Person> {
     public Person(String name, YearMonth birth, String location, char gender, List<Person> preferences, char group) {
         Optional<Short> idx = locationMap.keySet().stream().min(Short::compareTo);
         short nextKey = idx.isPresent() ? (short) (idx.get() + 1) : 0;
-        if (nextKey >= Short.MAX_VALUE) throw new IndexOutOfBoundsException(nextKey + " is out of bounds for location code");
+        if (nextKey == Short.MAX_VALUE) throw new IndexOutOfBoundsException(nextKey + " is out of bounds for location code");
         locationMap.put(nextKey, location);
 
         this.name = name;

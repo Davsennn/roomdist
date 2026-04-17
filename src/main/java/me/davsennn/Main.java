@@ -26,7 +26,7 @@ public final class Main {
     public static void execute() {
         processed = 0;
         startTime = System.nanoTime();
-        // split(Person.getPeople(), Room.getRooms().size());
+        init();
         System.out.println("Starting...");
         assignRoom(0, Person.getPeople(), new ArrayList<>(), 0);
         endTime = System.nanoTime();
