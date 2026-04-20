@@ -13,7 +13,9 @@ public class Person implements Comparable<Person> {
     private static final List<Person> people = new ArrayList<>();
     private static List<Person> lastRemoved;
     private static final Map<Short, String> locationMap = new HashMap<>();
+    private static short id_index = Short.MIN_VALUE;
     public static LinkedHashMap<PersonPair, Double> custom_bonuses;
+    public static boolean use_custom_bonuses;
 
     private static Config.PortableConfig config = new Config.PortableConfig();
 
@@ -43,7 +45,7 @@ public class Person implements Comparable<Person> {
             remove.add(people1[i]);
         }
         lastRemoved = remove;
-        System.out.println(lastRemoved);
+        // System.out.println(lastRemoved);
         Person.people.removeAll(remove);
     }
 
@@ -56,6 +58,7 @@ public class Person implements Comparable<Person> {
     public static void clearPeople() {
         Person.people.clear();
         Person.locationMap.clear();
+        id_index = Short.MIN_VALUE;
     }
 
     public static Person fromName(String name) {
@@ -75,6 +78,7 @@ public class Person implements Comparable<Person> {
     }
 
     // Instance
+    private final short id; // for more people than 32K, youd have to wait 99999 years anyway
     private final String name;
     private final int birthMonth; // Distance in months from birth month to Jan 0 CE
     private final short location;
@@ -92,7 +96,7 @@ public class Person implements Comparable<Person> {
     }
 
     public YearMonth getBirth() {
-        return YearMonth.of(birthMonth / 12, birthMonth % 12);
+        return YearMonth.of(birthMonth / 12, (birthMonth % 12) + 1);
     }
 
     public int getBirthMonth() {
@@ -125,13 +129,14 @@ public class Person implements Comparable<Person> {
     }
 
     public Person(String name, YearMonth birth, String location, char gender, List<Person> preferences, char group) {
-        Optional<Short> idx = locationMap.keySet().stream().min(Short::compareTo);
-        short nextKey = idx.isPresent() ? (short) (idx.get() + 1) : 0;
+        Optional<Short> idx = locationMap.keySet().stream().max(Short::compareTo);
+        short nextKey = idx.map(aShort -> (short) (aShort + 1)).orElse(Short.MIN_VALUE);
         if (nextKey == Short.MAX_VALUE) throw new IndexOutOfBoundsException(nextKey + " is out of bounds for location code");
         locationMap.put(nextKey, location);
 
+        this.id = id_index++;
         this.name = name;
-        this.birthMonth = birth.getYear()*12 + birth.getMonthValue();
+        this.birthMonth = birth.getYear()*12 + birth.getMonthValue() - 1;
         this.location = nextKey;
         this.gender = gender;
         this.preferences = preferences;
@@ -150,7 +155,7 @@ public class Person implements Comparable<Person> {
     @Override
     public boolean equals (Object o) {
         if (!(o instanceof Person)) return false;
-        return name.equals(((Person) o).name);
+        return id == ((Person) o).id;
     }
 
     @Override
@@ -198,11 +203,13 @@ public class Person implements Comparable<Person> {
                 if (ageDiff >= config.AGE_DIFFERENCE_THRESHOLD())         { score -= ageDiff * config.AGE_DIFFERENCE_PENALTY();
                 if (ageDiff >= config.LARGE_AGE_DIFFERENCE_THRESHOLD())     score -= ageDiff * config.LARGE_AGE_DIFFERENCE_PENALTY(); }
 
-                PersonPair pq = new PersonPair(p, q);
-                if (custom_bonuses != null && custom_bonuses.containsKey(pq)) {
-                    double customScore = custom_bonuses.get(pq);
-                    if (customScore == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
-                    else score += customScore / 2;
+                if (use_custom_bonuses) {
+                    PersonPair pq = new PersonPair(p, q);
+                    if (custom_bonuses.containsKey(pq)) {
+                        double customScore = custom_bonuses.get(pq);
+                        if (customScore == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+                        else score += customScore / 2;
+                    }
                 }
             }
 
@@ -217,17 +224,4 @@ public class Person implements Comparable<Person> {
         return score;
     }
 
-    public static double calculateOptimality(List<List<Person>> groups) {
-        if (groups == null || groups.isEmpty()) {
-            return Double.NEGATIVE_INFINITY;
-        }
-        double totalScore = 0.0;
-        for (List<Person> group : groups) {
-            int room = Room.chooseRoom(group.size());
-            if (room == -1) return Double.NEGATIVE_INFINITY;
-            totalScore += Room.calculateOptimality(group, room);
-        }
-        Room.resetAvailableRooms();
-        return totalScore;
-    }
 }

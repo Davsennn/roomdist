@@ -1,5 +1,6 @@
 package me.davsennn;
 
+import javax.naming.SizeLimitExceededException;
 import javax.swing.*;
 import me.davsennn.algorithm.*;
 
@@ -19,14 +20,18 @@ public final class Main {
     }
 
     public static long processed = 0;
+    public static long pruned = 0;
+    public static long tried_prune = 0;
     public static PriorityQueue<Result> resultPriorityQueue;
+    public static double worst_best_score = Double.NEGATIVE_INFINITY;
     public static Result[] results;
     public static long startTime;
     public static long endTime;
-    public static void execute() {
+    public static void execute() throws SizeLimitExceededException {
         processed = 0;
         startTime = System.nanoTime();
         init();
+        checkSizeLimits();
         System.out.println("Starting...");
         assignRoom(0, Person.getPeople(), new ArrayList<>(), 0);
         endTime = System.nanoTime();
@@ -45,8 +50,18 @@ public final class Main {
         if (!(Config.getPreferenceBonus() >= 0))
             Config.setDefaults();
         Person.updateConfig();
+        Person.use_custom_bonuses = !Person.custom_bonuses.isEmpty();
         config = new Config.PortableConfig();
         resultPriorityQueue = new PriorityQueue<>(11);
+    }
+
+    private static void checkSizeLimits() throws SizeLimitExceededException {
+        int amtPeople = Person.getPeople().size();
+        int amtBeds = 0;
+        for (Room r : Room.getRooms()) {
+            amtBeds += r.capacity();
+        }
+        if (amtPeople > amtBeds) throw new SizeLimitExceededException("Too many people (" + amtPeople + ") for too little beds (" + amtBeds + ")");
     }
 
     private static void assignRoom(int roomIdx,
@@ -59,10 +74,13 @@ public final class Main {
 
         if (roomIdx == Room.getRooms().size() || remaining.isEmpty()) {
             if (remaining.isEmpty()) {
+                if (currentScore <= worst_best_score) return;
                 resultPriorityQueue.add(new Result(new ArrayList<>(current), currentScore));
                 if (resultPriorityQueue.size() >= 11) {
                     resultPriorityQueue.remove();
                 }
+                Result worstbest = resultPriorityQueue.peek();
+                worst_best_score = worstbest == null ? worst_best_score : worstbest.score();
             }
 
             return;
@@ -71,12 +89,12 @@ public final class Main {
         Room room = Room.getRooms().get(roomIdx);
 
         // build this room's group
-        buildGroup(roomIdx, room, remaining, 0,
+        buildGroup(roomIdx, room.capacity(), remaining, 0,
                 new ArrayList<>(), current, currentScore);
     }
 
     private static void buildGroup(int roomIdx,
-                           Room room,
+                           int room,
                            List<Person> remaining,
                            int start,
                            List<Person> group,
@@ -87,10 +105,10 @@ public final class Main {
 
 
         // --- IF GROUP SIZE IS USABLE ---
-        if (size >= room.capacity() - 2 &&
-            size <= room.capacity() + 1) {
+        if (size >= room - 1 &&
+            size <= room + 1) {
 
-            double fullScore = Room.calculateOptimality(group, room.capacity());
+            double fullScore = Room.calculateOptimality(group, room);
             double newScore = currentScore + fullScore;
 
             // recurse to next room
@@ -99,13 +117,15 @@ public final class Main {
             List<Person> newRemaining = new ArrayList<>(remaining);
             newRemaining.removeAll(group);
             processed++;
-            if (processed % 5000000 == 0) {
+            if (processed % 1000000 == 0) {
                 Result best = resultPriorityQueue.peek();
-                double s;
                 if (best != null) {
-                    s = Person.calculateOptimality(best.config());
-                    System.out.printf("%1$,4dM | %3$4.4f | %2$s %n", processed/1000000, best, s);
+                    System.out.printf("%1$,4dM | %4$,4d | %5$,4d | %3$4.4f | %2$s %n", processed/1000000, best, best.score(), pruned, tried_prune);
+                } else {
+                    System.out.println(processed/1000000 + "|" + pruned + "|" + tried_prune);
                 }
+
+                //System.out.println(processed/1000000 + "|" + pruned + "|" + tried_prune);
             }
             assignRoom(roomIdx + 1, newRemaining, current, newScore);
 
@@ -113,16 +133,24 @@ public final class Main {
         }
 
         // --- STOP IF TOO BIG ---
-        if (size >= room.capacity() + 1) return;
+        if (size >= room + 1) return;
 
         // --- EXTEND GROUP ---
         for (int i = start; i < remaining.size(); i++) {
             Person p = remaining.get(i);
 
             if (config.USE_EARLY_PRUNING() && roomIdx <= config.EARLY_PRUNING_LENGTH() && size != 0) { // prune early
-                int doPrefer = 0;
-                for (Person q : group) if (p.prefers(q)) ++doPrefer;
-                if (size <= config.EARLY_PRUNING_STRENGTH() && doPrefer == 0) continue;
+                if (size <= config.EARLY_PRUNING_STRENGTH()) {
+                    ++tried_prune;
+                    boolean cut = true;
+                    for (Person q : group)
+                        if (p.prefers(q)) {
+                            cut = false;
+                            break;
+                        }
+                    if (cut) { ++pruned; return; }
+                }
+                if (remaining.size() + currentScore < worst_best_score) { ++pruned; return; }
             }
 
             group.add(p);

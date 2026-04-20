@@ -4,7 +4,7 @@ public record PersonPair(Person a, Person b) implements Comparable<PersonPair> {
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof PersonPair(Person a1, Person b1))) return false;
-        return (a1 == this.a && b1 == this.b) || (a1 == this.b && b1 == this.a);
+        return (a1.equals(this.a) && b1.equals(this.b)) || (a1.equals(this.b) && b1.equals(this.a));
     }
 
     @Override

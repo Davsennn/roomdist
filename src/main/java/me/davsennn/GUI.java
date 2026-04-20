@@ -343,6 +343,7 @@ public final class GUI {
             public Object getValueAt(int rowIndex, int columnIndex) {
                 Person[] people = Person.getPeopleSorted();
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-uuuu");
+                // System.out.println(people[rowIndex].getName());
                 return switch (columnIndex) {
                     case 0 -> people[rowIndex].getGroup();
                     case 1 -> people[rowIndex].getName();
@@ -961,4 +962,8 @@ public final class GUI {
         }
         resultsList.setSelectedIndex(0);
     }
+
+
+
+    public GUI() { throw new AssertionError("What are you even trying to do?"); }
 }
