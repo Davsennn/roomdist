@@ -2,4 +2,4 @@
 Divide many people into groups of specified sizes with preferences and weights.
 </br>
 TODO: 
-- None rn
+- OPTIMIZE REALLY BADLY
