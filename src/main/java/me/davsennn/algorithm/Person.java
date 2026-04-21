@@ -5,7 +5,7 @@ import me.davsennn.Config;
 import java.time.YearMonth;
 import java.util.*;
 
-// name must be unique
+@SuppressWarnings("unused")
 public class Person implements Comparable<Person> {
     // static methods
     public static final int now = YearMonth.now().getYear()*12 + YearMonth.now().getMonthValue();
@@ -13,9 +13,11 @@ public class Person implements Comparable<Person> {
     private static final List<Person> people = new ArrayList<>();
     private static List<Person> lastRemoved;
     private static final Map<Short, String> locationMap = new HashMap<>();
-    private static short id_index = Short.MIN_VALUE;
+    private static short id_index = 0;
     public static LinkedHashMap<PersonPair, Double> custom_bonuses;
     public static boolean use_custom_bonuses;
+
+    public static boolean[][] preferenceMatrix;
 
     private static Config.PortableConfig config = new Config.PortableConfig();
 
@@ -91,6 +93,10 @@ public class Person implements Comparable<Person> {
         this.preferences = preferences;
     }
 
+    public short getId() {
+        return id;
+    }
+
     public String getName() {
         return name;
     }
@@ -152,6 +158,10 @@ public class Person implements Comparable<Person> {
         return preferences.contains(other);
     }
 
+    public static boolean prefers(Person a, Person b) {
+        return preferenceMatrix[a.getId()][b.getId()];
+    }
+
     @Override
     public boolean equals (Object o) {
         if (!(o instanceof Person)) return false;
@@ -187,21 +197,7 @@ public class Person implements Comparable<Person> {
 
             for (Person q : ppl) {
                 if (p.equals(q)) continue;
-                if (p.getGroup() != q.getGroup()) return Double.NEGATIVE_INFINITY;
-
-                boolean pref = p.prefers(q);
-                if (pref) --noPreferences;
-
-                int ageDiff = p.ageDiffMonths(q.getBirthMonth());
-
-                if (pref)                                       score += q.prefers(p) ?
-                                                                         config.MUTUAL_PREFERENCE_BONUS()/2 :
-                                                                         config.PREFERENCE_BONUS();
-                else                                            score -= config.NON_PREFERENCE_PENALTY();
-                if (p.getLocationCode() == q.getLocationCode()) score += config.SAME_LOCATION_BONUS();
-                if (p.getGender() == q.getGender())             score += config.SAME_GENDER_BONUS();
-                if (ageDiff >= config.AGE_DIFFERENCE_THRESHOLD())         { score -= ageDiff * config.AGE_DIFFERENCE_PENALTY();
-                if (ageDiff >= config.LARGE_AGE_DIFFERENCE_THRESHOLD())     score -= ageDiff * config.LARGE_AGE_DIFFERENCE_PENALTY(); }
+                //if (p.getGroup() != q.getGroup()) return Double.NEGATIVE_INFINITY;
 
                 if (use_custom_bonuses) {
                     PersonPair pq = new PersonPair(p, q);
@@ -211,14 +207,28 @@ public class Person implements Comparable<Person> {
                         else score += customScore / 2;
                     }
                 }
+
+                boolean pref = Person.prefers(p, q);
+                if (pref) --noPreferences;
+
+                //int ageDiff = p.ageDiffMonths(q.getBirthMonth());
+
+                if (pref)                                       score += Person.prefers(q, p) ?
+                                                                         config.MUTUAL_PREFERENCE_BONUS() :
+                                                                         config.PREFERENCE_BONUS();
+                else                                            score -= config.NON_PREFERENCE_PENALTY();
+                //if (p.getLocationCode() == q.getLocationCode()) score += config.SAME_LOCATION_BONUS();
+                //if (p.getGender() == q.getGender())             score += config.SAME_GENDER_BONUS();
+                //if (ageDiff >= config.AGE_DIFFERENCE_THRESHOLD())         { score -= ageDiff * config.AGE_DIFFERENCE_PENALTY();
+                //if (ageDiff >= config.LARGE_AGE_DIFFERENCE_THRESHOLD())     score -= ageDiff * config.LARGE_AGE_DIFFERENCE_PENALTY(); }
             }
 
-            if (p.ageDiffMonths(now) > config.LARGE_GROUP_AGE_LIMIT()) applyLargeGroupBonus = false;
+            //if (p.ageDiffMonths(now) > config.LARGE_GROUP_AGE_LIMIT()) applyLargeGroupBonus = false;
 
             score -= noPreferences * config.UNFULFILLED_PREFERENCE_PENALTY(); // Penalize for unfulfilled preferences
         }
-        if (applyLargeGroupBonus && ppl.size() <= config.LARGE_GROUP_SIZE_THRESHOLD())
-            score += config.LARGE_GROUP_BONUS() * ppl.size();
+        //if (applyLargeGroupBonus && ppl.size() <= config.LARGE_GROUP_SIZE_THRESHOLD())
+        //    score += config.LARGE_GROUP_BONUS() * ppl.size();
 
         score /= (ppl.size() - 1); // Normalize score by number of comparisons
         return score;

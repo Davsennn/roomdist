@@ -5,6 +5,7 @@ import me.davsennn.algorithm.PersonPair;
 import me.davsennn.algorithm.Result;
 import me.davsennn.algorithm.Room;
 
+import javax.naming.SizeLimitExceededException;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
@@ -767,6 +768,17 @@ public final class GUI {
         roomsPage.add(manualPanel);
 
         JPanel buttons = new JPanel();
+        JButton removeOverhang = new JButton(get("button.removeOverhang"));
+        removeOverhang.addActionListener(ignored -> {
+            try {
+                Room.removeOverhangRooms();
+            } catch (SizeLimitExceededException e) {
+                log("%"+e.getMessage());
+            }
+            roomsModel.fireTableDataChanged();
+        });
+        buttons.add(removeOverhang);
+
         JButton delete = new JButton(get("button.delete"));
         delete.addActionListener(ignored -> {
             int[] rows = roomsTable.getSelectedRows();
@@ -868,22 +880,41 @@ public final class GUI {
         computeButton.addActionListener(ignored -> {
             log.setText(get("msg.seeConsoleLog"));
             update();
-            try {
-                Main.execute();
-            } catch (Exception e) {
-                if (Person.getPeople().isEmpty())
-                    log("msg.err", "", "msg.noPeople");
-                else if (Room.getRooms().isEmpty())
-                    log("msg.err", "", "msg.noRooms");
-                else
-                    log("msg.err", "", "%"+e.getMessage());
-                return;
-            }
-            constructDisplay();
-            long diff = Main.endTime - Main.startTime;
-            log.setText(String.format(get("msg.performanceReport"),
-                    Main.processed, diff/1000000L, diff%1000000L, (Main.processed*1000000000L/diff)));
-            update();
+
+            new SwingWorker<Void, Void>() {
+                long diff;
+
+                @Override
+                protected Void doInBackground() throws SizeLimitExceededException {
+                    Main.execute();
+                    diff = Main.endTime - Main.startTime;
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get(); // rethrows exceptions
+
+                        constructDisplay();
+                        log.setText(String.format(GUI.get("msg.performanceReport"),
+                                Main.processed,
+                                diff / 1_000_000L,
+                                diff % 1_000_000L,
+                                (Main.processed * 1_000_000_000L / diff)
+                        ));
+                        update();
+
+                    } catch (Exception e) {
+                        if (Person.getPeople().isEmpty())
+                            log("msg.err", "", "msg.noPeople");
+                        else if (Room.getRooms().isEmpty())
+                            log("msg.err", "", "msg.noRooms");
+                        else
+                            log("msg.err", "", "%" + e.getMessage());
+                    }
+                }
+            }.execute();
         });
         buttonPanel.add(computeButton);
 

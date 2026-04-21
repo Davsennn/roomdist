@@ -31,7 +31,7 @@ public final class Main {
         processed = 0;
         startTime = System.nanoTime();
         init();
-        checkSizeLimits();
+        System.out.println(Room.everywhere());
         System.out.println("Starting...");
         assignRoom(0, Person.getPeople(), new ArrayList<>(), 0);
         endTime = System.nanoTime();
@@ -45,23 +45,19 @@ public final class Main {
         }
     }
 
-    private static void init() {
+    private static void init() throws SizeLimitExceededException {
         Room.finish();
-        if (!(Config.getPreferenceBonus() >= 0))
-            Config.setDefaults();
         Person.updateConfig();
         Person.use_custom_bonuses = !Person.custom_bonuses.isEmpty();
+        int amtPeople = Person.getPeople().size();
+        Person.preferenceMatrix = new boolean[amtPeople][amtPeople];
+        for (int p = 0; p < amtPeople; ++p) {
+            for (int q = 0; q < amtPeople; ++q) {
+                Person.preferenceMatrix[p][q] = Person.getPeople().get(p).prefers(Person.getPeople().get(q));
+            }
+        }
         config = new Config.PortableConfig();
         resultPriorityQueue = new PriorityQueue<>(11);
-    }
-
-    private static void checkSizeLimits() throws SizeLimitExceededException {
-        int amtPeople = Person.getPeople().size();
-        int amtBeds = 0;
-        for (Room r : Room.getRooms()) {
-            amtBeds += r.capacity();
-        }
-        if (amtPeople > amtBeds) throw new SizeLimitExceededException("Too many people (" + amtPeople + ") for too little beds (" + amtBeds + ")");
     }
 
     private static void assignRoom(int roomIdx,
@@ -72,17 +68,16 @@ public final class Main {
         if (currentScore == Double.NEGATIVE_INFINITY) return;
 
 
-        if (roomIdx == Room.getRooms().size() || remaining.isEmpty()) {
-            if (remaining.isEmpty()) {
-                if (currentScore <= worst_best_score) return;
-                resultPriorityQueue.add(new Result(new ArrayList<>(current), currentScore));
-                if (resultPriorityQueue.size() >= 11) {
-                    resultPriorityQueue.remove();
-                }
-                Result worstbest = resultPriorityQueue.peek();
-                worst_best_score = worstbest == null ? worst_best_score : worstbest.score();
-            }
+        if (roomIdx == Room.getRooms().size()) return;
 
+        if (remaining.isEmpty()) {
+            if (currentScore <= worst_best_score) return;
+            resultPriorityQueue.add(new Result(new ArrayList<>(current), currentScore));
+            if (resultPriorityQueue.size() >= 11) {
+                resultPriorityQueue.remove();
+            }
+            Result worstbest = resultPriorityQueue.peek();
+            worst_best_score = worstbest == null ? worst_best_score : worstbest.score();
             return;
         }
 
@@ -117,7 +112,7 @@ public final class Main {
             List<Person> newRemaining = new ArrayList<>(remaining);
             newRemaining.removeAll(group);
             processed++;
-            if (processed % 1000000 == 0) {
+            if (processed % 20000000 == 0) {
                 Result best = resultPriorityQueue.peek();
                 if (best != null) {
                     System.out.printf("%1$,4dM | %4$,4d | %5$,4d | %3$4.4f | %2$s %n", processed/1000000, best, best.score(), pruned, tried_prune);
@@ -136,7 +131,8 @@ public final class Main {
         if (size >= room + 1) return;
 
         // --- EXTEND GROUP ---
-        for (int i = start; i < remaining.size(); i++) {
+        int remainingsize = remaining.size();
+        for (int i = start; i < remainingsize; i++) {
             Person p = remaining.get(i);
 
             if (config.USE_EARLY_PRUNING() && roomIdx <= config.EARLY_PRUNING_LENGTH() && size != 0) { // prune early
@@ -144,11 +140,11 @@ public final class Main {
                     ++tried_prune;
                     boolean cut = true;
                     for (Person q : group)
-                        if (p.prefers(q)) {
+                        if (Person.prefers(p, q)) {
                             cut = false;
                             break;
                         }
-                    if (cut) { ++pruned; return; }
+                    if (cut) { ++pruned; continue; }
                 }
                 if (remaining.size() + currentScore < worst_best_score) { ++pruned; return; }
             }

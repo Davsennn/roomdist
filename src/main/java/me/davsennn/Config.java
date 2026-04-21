@@ -222,7 +222,7 @@ public final class Config {
                 Config.PREFERENCE_BONUS,
                 Config.NON_PREFERENCE_PENALTY,
                 Config.UNFULFILLED_PREFERENCE_PENALTY,
-                Config.MUTUAL_PREFERENCE_BONUS,
+                Config.MUTUAL_PREFERENCE_BONUS / 2,
                 Config.AGE_DIFFERENCE_PENALTY / 12,
                 Config.LARGE_AGE_DIFFERENCE_PENALTY / 12,
                 Config.SAME_LOCATION_BONUS,
