@@ -23,7 +23,7 @@ public final class Main {
     public static long pruned = 0;
     public static long tried_prune = 0;
     public static PriorityQueue<Result> resultPriorityQueue;
-    public static double worst_best_score = Double.NEGATIVE_INFINITY;
+    public static double worst_best_score = 0;
     public static Result[] results;
     public static long startTime;
     public static long endTime;
@@ -109,8 +109,10 @@ public final class Main {
             // recurse to next room
             current.add(new ArrayList<>(group));
 
-            List<Person> newRemaining = new ArrayList<>(remaining);
-            newRemaining.removeAll(group);
+            // List<Person> newRemaining = new ArrayList<>(remaining);
+            // newRemaining.removeAll(group);
+            List<Person> newRemaining = new ArrayList<>(remaining.size() - group.size());
+            for (Person p : remaining) if (!group.contains(p)) newRemaining.add(p);
             processed++;
             if (processed % 20000000 == 0) {
                 Result best = resultPriorityQueue.peek();

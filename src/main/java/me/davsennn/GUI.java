@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-// @SuppressWarnings("DuplicatedCode")
+@SuppressWarnings("DuplicatedCode")
 public final class GUI {
     public static JFrame fenster;
     public static void update() { fenster.revalidate(); fenster.repaint(); }
@@ -65,6 +65,8 @@ public final class GUI {
             locale = (Locale) localeSelector.getSelectedItem();
             fenster.setVisible(false);
             createWindow();
+            firePeopleChange();
+            fireRoomsChange();
         });
         locale = (Locale) localeSelector.getSelectedItem();
         if (locale == null) locale = Locale.getDefault();
@@ -312,6 +314,7 @@ public final class GUI {
         return saveFileChooser.getSelectedFile();
     }
 
+    public static JTextArea peopleText;
     private static void buildPeoplePage() {
         peoplePage = new JPanel();
         peoplePage.setLayout(new BoxLayout(peoplePage, BoxLayout.PAGE_AXIS));
@@ -543,14 +546,26 @@ public final class GUI {
         everyone.addActionListener(ignored -> System.out.println(Person.getPeople()));
         buttons.add(everyone);
 
-
         peoplePage.add(buttons);
+
+        peopleText = new JTextArea();
+        peopleText.setEditable(false);
+        peoplePage.add(peopleText);
+
         peoplePage.add(new JScrollPane(peopleTable));
     }
 
     static final DefaultListModel<String> peopleListModel = new DefaultListModel<>();
     static final JList<String> peopleList = new JList<>(peopleListModel);
-    static void firePeopleChange() { peopleListModel.clear(); peopleListModel.addAll(Arrays.stream(Person.getPeopleSorted()).map(Person::getName).toList()); }
+    static void firePeopleChange() {
+        peopleListModel.clear();
+        peopleListModel.addAll(Arrays.stream(Person.getPeopleSorted()).map(Person::getName).toList());
+        peopleText.setText(Person.getPeople().size() + " people from " +
+                Person.getPeople().stream().map(Person::getBirth).min(YearMonth::compareTo).orElse(YearMonth.of(1900,1)) + " to " +
+                Person.getPeople().stream().map(Person::getBirth).max(YearMonth::compareTo).orElse(YearMonth.of(1900,1)) + ", " +
+                Person.getPeople().stream().filter(p -> p.getGender() == 'm').toList().size() + " m," +
+                Person.getPeople().stream().filter(p -> p.getGender() == 'f').toList().size() + " f");
+    }
     private static void buildBonusesPage() {
         Person.custom_bonuses = new LinkedHashMap<>();
 
@@ -575,7 +590,11 @@ public final class GUI {
         JSpinner score = new JSpinner(new SpinnerNumberModel(0.0, -999.0, 999.0, 0.1));
         JCheckBox isNegativeInfinity = new JCheckBox(get("cbs.negativeInfinity"));
         AtomicBoolean selected = new AtomicBoolean(false);
-        isNegativeInfinity.addItemListener(i -> selected.set(i.getStateChange() == ItemEvent.SELECTED));
+        isNegativeInfinity.addItemListener(i -> {
+            boolean value = i.getStateChange() == ItemEvent.SELECTED;
+            selected.set(value);
+            score.setEnabled(!value);
+        });
         JPanel p1Panel = new JPanel(); p1Panel.add(immutableText("1")); p1Panel.add(p1);
         manualPanel.add(p1Panel);
         JPanel p2Panel = new JPanel(); p2Panel.add(immutableText("2")); p2Panel.add(p2);
@@ -667,39 +686,47 @@ public final class GUI {
         bonusesPage.add(new JScrollPane(bonusesTable));
     }
 
+    static AbstractTableModel roomsModel = new AbstractTableModel() {
+        @Override
+        public int getRowCount() {
+            return Room.getRooms().size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return 2;
+        }
+
+        @Override
+        public String getColumnName(int col) {
+            return switch (col) {
+                case 0 -> get("col.id");
+                case 1 -> get("col.capacity");
+                default -> null;
+            };
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            return switch (columnIndex) {
+                case 0 -> Room.getRooms().get(rowIndex).id();
+                case 1 -> Room.getRooms().get(rowIndex).capacity();
+                default -> null;
+            };
+        }
+    };
+    static void fireRoomsChange() {
+        roomsModel.fireTableDataChanged();
+        roomsText.setText(Room.getRooms().size() + " rooms from " +
+                Room.getRooms().stream().map(Room::capacity).min(Double::compare).orElse(0) + " to " +
+                Room.getRooms().stream().map(Room::capacity).max(Double::compare).orElse(0) + ", total " +
+                Room.getRooms().stream().mapToInt(Room::capacity).sum() + " beds");
+    }
+    public static JTextArea roomsText;
     private static void buildRoomsPage() {
         roomsPage = new JPanel();
         roomsPage.setLayout(new BoxLayout(roomsPage, BoxLayout.PAGE_AXIS));
 
-        AbstractTableModel roomsModel = new AbstractTableModel() {
-            @Override
-            public int getRowCount() {
-                return Room.getRooms().size();
-            }
-
-            @Override
-            public int getColumnCount() {
-                return 2;
-            }
-
-            @Override
-            public String getColumnName(int col) {
-                return switch (col) {
-                    case 0 -> get("col.id");
-                    case 1 -> get("col.capacity");
-                    default -> null;
-                };
-            }
-
-            @Override
-            public Object getValueAt(int rowIndex, int columnIndex) {
-                return switch (columnIndex) {
-                    case 0 -> Room.getRooms().get(rowIndex).id();
-                    case 1 -> Room.getRooms().get(rowIndex).capacity();
-                    default -> null;
-                };
-            }
-        };
         JTable roomsTable = new JTable(roomsModel);
         roomsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         roomsTable.getColumnModel().getColumn(0).setPreferredWidth(150);
@@ -725,13 +752,13 @@ public final class GUI {
                 JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
                         JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
             }
-            roomsModel.fireTableDataChanged();
+            fireRoomsChange();
         });
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
             File file = new File(ROOT + "\\src\\main\\resources\\rooms.csv");
             Room.addRooms(Main.parseRooms(file));
-            roomsModel.fireTableDataChanged();
+            fireRoomsChange();
         });
         importPanel.add(browseButton);
         importPanel.add(test);
@@ -761,7 +788,7 @@ public final class GUI {
             String roomIdv = roomId.getText().trim();
             int capacityv = (int) capacity.getValue();
             new Room(roomIdv, capacityv);
-            roomsModel.fireTableDataChanged();
+            fireRoomsChange();
         });
         manualPanel.add(manualAdd);
 
@@ -775,7 +802,7 @@ public final class GUI {
             } catch (SizeLimitExceededException e) {
                 log("%"+e.getMessage());
             }
-            roomsModel.fireTableDataChanged();
+            fireRoomsChange();
         });
         buttons.add(removeOverhang);
 
@@ -785,14 +812,14 @@ public final class GUI {
             if (rows.length == 0)
                 log("msg.noRoomsSelected");
             Room.removeRooms(rows);
-            roomsModel.fireTableDataChanged();
+            fireRoomsChange();
         });
         buttons.add(delete);
 
         JButton restore = new JButton(get("button.restore"));
         restore.addActionListener(ignored -> {
             Room.restore();
-            roomsModel.fireTableDataChanged();
+            fireRoomsChange();
         });
         buttons.add(restore);
 
@@ -820,7 +847,7 @@ public final class GUI {
         deleteAll.addActionListener(ignored -> {
             if (ask(get("msg.deleteRooms")) == JOptionPane.YES_OPTION) {
                 Room.clearRooms();
-                roomsModel.fireTableDataChanged();
+                fireRoomsChange();
             }
         });
         buttons.add(deleteAll);
@@ -831,8 +858,11 @@ public final class GUI {
 
         roomsPage.add(buttons);
 
-        roomsPage.add(new JScrollPane(roomsTable));
+        roomsText = new JTextArea();
+        roomsText.setEditable(false);
+        roomsPage.add(roomsText);
 
+        roomsPage.add(new JScrollPane(roomsTable));
     }
 
     static final DefaultListModel<String> model = new DefaultListModel<>();
@@ -993,8 +1023,6 @@ public final class GUI {
         }
         resultsList.setSelectedIndex(0);
     }
-
-
 
     public GUI() { throw new AssertionError("What are you even trying to do?"); }
 }
