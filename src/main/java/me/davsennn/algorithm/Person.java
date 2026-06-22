@@ -21,6 +21,7 @@ public class Person implements Comparable<Person> {
     private static double[] unfulfilledPreferencePenalties;
     private static double[][] directedPairScores;
     private static double[][] symmetricPairScores;
+    private static boolean[] succeedsLargeGroupAgeLimitTable;
 
     private static Config.PortableConfig config = new Config.PortableConfig();
 
@@ -189,17 +190,19 @@ public class Person implements Comparable<Person> {
         directedPairScores = new double[id_index][id_index];
         symmetricPairScores = new double[id_index][id_index];
         preferenceMatrix = new boolean[id_index][id_index];
+        succeedsLargeGroupAgeLimitTable = new boolean[id_index];
 
         for (Person p : people) {
             int pId = p.getId();
             unfulfilledPreferencePenalties[pId] = p.getPreferences().size() * config.UNFULFILLED_PREFERENCE_PENALTY();
             directedPairScores[pId][pId] = Double.NEGATIVE_INFINITY;
+            succeedsLargeGroupAgeLimitTable[pId] = p.ageDiffMonths(now) > Config.getLargeGroupAgeLimit();
 
             for (Person q : people) {
                 int qId = q.getId();
                 if (p == q) continue;
 
-                preferenceMatrix[p.getId()][q.getId()] = p.prefers(q);
+                preferenceMatrix[pId][qId] = p.prefers(q);
 
                 double score = 0.0;
 
@@ -277,7 +280,7 @@ public class Person implements Comparable<Person> {
             Person p = ppl.get(i);
             int pId = p.getId();
             score -= unfulfilledPreferencePenalties[pId];
-            if (p.ageDiffMonths(now) > config.LARGE_GROUP_AGE_LIMIT()) applyLargeGroupBonus = false;
+            if (succeedsLargeGroupAgeLimitTable[pId]) applyLargeGroupBonus = false;
 
             for (int j = 0; j < ppl.size(); ++j) {
                 if (i == j) continue;
