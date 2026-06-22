@@ -1,0 +1,58 @@
+{name}, {birth}[MM YYYY], {location}, {gender}["f"|"m"|"d"], {preferences}["[name1;name2; ...]"], {group}
+113, 12 2014, Burgweinting, f, [112;114], A
+134, 08 2012, Königswiesen, f, [133;135], A
+157, 04 2012, Stadtamhof, f, [155;156;158], A
+126, 01 2014, Prüfening, m, [125], A
+151, 04 2011, Stadtamhof, f, [152], A
+152, 06 2011, Stadtamhof, f, [151;153], A
+145, 09 2015, Kasernenviertel, m, [144;146;147], A
+Sebastian Schweinsteiger, 02 2016, Prüfening, m, [Lisa Müller;Max Mustermann;Anna Schmidt], A
+X53, 08 2011, Stadtamhof, f, [], A
+117, 08 2015, Burgweinting, f, [115;116;118], A
+Peter Meier, 06 2012, Prüfening, m, [Hans Zimmer], A
+115, 04 2015, Burgweinting, f, [114;116;117], A
+154, 10 2011, Stadtamhof, m, [153;155], A
+135, 10 2012, Königswiesen, f, [134;136;137], A
+105, 08 2013, Prüfening, m, [107], A
+143, 05 2015, Kasernenviertel, m, [142;144], A
+112, 10 2014, Burgweinting, f, [111;113], A
+121, 03 2013, Prüfening, m, [122], A
+137, 02 2013, Königswiesen, f, [135;136;138], A
+Julia Fischer, 09 2014, Burgweinting, f, [Lisa Müller], A
+136, 12 2012, Königswiesen, f, [135], A
+111, 08 2014, Burgweinting, f, [112], A
+106, 06 2013, Prüfening, m, [107; 105], A
+158, 06 2012, Stadtamhof, f, [157;159], A
+Peter Marquardt, 02 2012, Burgweinting, m, [Hans Zimmer;Peter Meier], A
+148, 03 2016, Kasernenviertel, m, [147], A
+102, 08 2011, Königswiesen, m, [101; 103], A
+155, 12 2011, Stadtamhof, m, [154;156;157], A
+131, 02 2012, Königswiesen, f, [132], A
+133, 06 2012, Königswiesen, f, [132;134], A
+103, 05 2012, Königswiesen, f, [102], A
+104, 09 2013, Prüfening, m, [107], A
+107, 04 2013, Prüfening, m, [104], A
+146, 11 2015, Kasernenviertel, m, [145], A
+128, 05 2014, Prüfening, f, [127], A
+Hans Zimmer, 07 2012, Prüfening, m, [Peter Meier;Peter Marquardt], A
+X22, 05 2013, Prüfening, m, [], A
+141, 01 2015, Kasernenviertel, m, [142], A
+132, 04 2012, Königswiesen, f, [131;133], A
+116, 06 2015, Burgweinting, f, [115], A
+144, 07 2015, Kasernenviertel, m, [143;145], A
+156, 02 2012, Stadtamhof, m, [155;157], A
+X01, 02 2016, Prüfening, m, [], A
+125, 11 2013, Prüfening, m, [124;126;127], A
+Anna Schmidt, 11 2014, Burgweinting, f, [Lisa Müller;Max Mustermann], A
+142, 03 2015, Kasernenviertel, m, [141;143], A
+114, 02 2015, Burgweinting, f, [113;115], A
+124, 09 2013, Prüfening, m, [123;125], A
+118, 10 2015, Burgweinting, d, [117], A
+101, 04 2012, Königswiesen, m, [102], A
+Lisa Müller, 03 2015, Burgweinting, f, [Max Mustermann], A
+X59, 08 2012, Stadtamhof, m, [], A
+127, 03 2014, Prüfening, m, [125;126;128], A
+138, 04 2013, Königswiesen, f, [137], A
+123, 07 2013, Prüfening, m, [122;124], A
+X02, 05 2015, Prüfening, m, [], A
+147, 01 2016, Kasernenviertel, m, [145;146;148], A
