@@ -26,8 +26,8 @@ public final class Config {
     public static void setDefaults() {
         setPreferenceBonus(4.0);
         setNonPreferencePenalty(0.0);
-        setUnfulfilledPreferencePenalty(6.0);
-        setMutualPreferenceBonus(15.0);
+        setUnfulfilledPreferencePenalty(12.0);
+        setMutualPreferenceBonus(17.5);
         setAgeDifferencePenalty(1.0);
         setLargeAgeDifferencePenalty(2.0);
         setSameLocationBonus(1.0);
