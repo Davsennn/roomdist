@@ -1,9 +1,6 @@
 package me.davsennn;
 
-import me.davsennn.algorithm.Person;
-import me.davsennn.algorithm.PersonPair;
-import me.davsennn.algorithm.Result;
-import me.davsennn.algorithm.Room;
+import me.davsennn.algorithm.*;
 
 import javax.naming.SizeLimitExceededException;
 import javax.swing.*;
@@ -383,7 +380,7 @@ public final class GUI {
                 return;
             }
             try {
-                Person.addPeople(Main.parsePeople(importFileChooser.getSelectedFile()));
+                Person.addPeople(FileIO.parsePeople(importFileChooser.getSelectedFile()));
             } catch (IllegalArgumentException e) {
                 JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
                         JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
@@ -393,8 +390,10 @@ public final class GUI {
         });
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
-            File file = new File(ROOT + "\\src\\main\\resources\\people.csv");
-            Person.addPeople(Main.parsePeople(file));
+            File file = new File(ROOT + "\\src\\main\\resources\\halfshuffledpeople.csv");
+            List<Person> people = FileIO.parsePeople(file);
+            Collections.shuffle(people);
+            Person.addPeople(people);
             peopleModel.fireTableDataChanged();
             firePeopleChange();
         });
@@ -564,7 +563,8 @@ public final class GUI {
                 Person.getPeople().stream().map(Person::getBirth).min(YearMonth::compareTo).orElse(YearMonth.of(1900,1)) + " to " +
                 Person.getPeople().stream().map(Person::getBirth).max(YearMonth::compareTo).orElse(YearMonth.of(1900,1)) + ", " +
                 Person.getPeople().stream().filter(p -> p.getGender() == 'm').toList().size() + " m," +
-                Person.getPeople().stream().filter(p -> p.getGender() == 'f').toList().size() + " f");
+                Person.getPeople().stream().filter(p -> p.getGender() == 'f').toList().size() + " f in " +
+                Person.getPeople().stream().map(Person::getLocationCode).distinct().toList().size() + " locations");
     }
     private static void buildBonusesPage() {
         Person.custom_bonuses = new LinkedHashMap<>();
@@ -747,7 +747,7 @@ public final class GUI {
                 return;
             }
             try {
-                Room.addRooms(Main.parseRooms(importFileChooser.getSelectedFile()));
+                Room.addRooms(FileIO.parseRooms(importFileChooser.getSelectedFile()));
             } catch (IllegalArgumentException e) {
                 JOptionPane.showConfirmDialog(fenster, get("msg.illegalCsvFormat") + " \n" + e.getMessage(), get("title.warn"),
                         JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
@@ -757,7 +757,7 @@ public final class GUI {
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
             File file = new File(ROOT + "\\src\\main\\resources\\rooms.csv");
-            Room.addRooms(Main.parseRooms(file));
+            Room.addRooms(FileIO.parseRooms(file));
             fireRoomsChange();
         });
         importPanel.add(browseButton);
@@ -870,9 +870,9 @@ public final class GUI {
     static final AbstractTableModel dataModel = new AbstractTableModel() {
         @Override
         public int getRowCount() {
-            if (Main.results == null) return 0;
+            if (SearchTask.results == null) return 0;
             if (resultsList.getSelectedIndex() == -1) return 0;
-            return Main.results[resultsList.getSelectedIndex()].config().size();
+            return SearchTask.results[resultsList.getSelectedIndex()].config().size();
         }
 
         @Override
@@ -883,8 +883,8 @@ public final class GUI {
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             return switch (columnIndex) {
-                case 0 ->                     Main.results[9-resultsList.getSelectedIndex()].config().get(rowIndex).size();
-                case 1 -> Result.toStringList(Main.results[9-resultsList.getSelectedIndex()].config().get(rowIndex)).substring(2).replace(']', ' ');
+                case 0 ->                     SearchTask.results[9-resultsList.getSelectedIndex()].config().get(rowIndex).size();
+                case 1 -> Result.toStringList(SearchTask.results[9-resultsList.getSelectedIndex()].config().get(rowIndex)).substring(2).replace(']', ' ');
                 default -> "";
             };
         }
@@ -916,8 +916,8 @@ public final class GUI {
 
                 @Override
                 protected Void doInBackground() throws SizeLimitExceededException {
-                    Main.execute();
-                    diff = Main.endTime - Main.startTime;
+                    SearchTask.execute();
+                    diff = SearchTask.endTime - SearchTask.startTime;
                     return null;
                 }
 
@@ -928,10 +928,10 @@ public final class GUI {
 
                         constructDisplay();
                         log.setText(String.format(GUI.get("msg.performanceReport"),
-                                Main.processed,
+                                SearchTask.processed,
                                 diff / 1_000_000L,
                                 diff % 1_000_000L,
-                                (Main.processed * 1_000_000_000L / diff)
+                                (SearchTask.processed.sum() * 1_000_000_000L / diff)
                         ));
                         update();
 
@@ -956,8 +956,8 @@ public final class GUI {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(file));
                 StringBuilder ret = new StringBuilder(get("exp.all"));
                 ret.append("\n\n\n");
-                for (int i = 1; i <= Main.results.length; ++i) {
-                    Result r = Main.results[10-i];
+                for (int i = 1; i <= SearchTask.results.length; ++i) {
+                    Result r = SearchTask.results[10-i];
                     ret.append(String.format("%1$s #%2$d (%3$+4.5g): [%n", get("exp.result"), i, r.score()));
                     StringBuilder res = new StringBuilder("    " + Result.toString(r.config(), ",\n    "));
                     res.deleteCharAt(res.indexOf("["));
@@ -982,7 +982,7 @@ public final class GUI {
             if (file == null) return;
             try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-                Result r = Main.results[9-resultsList.getSelectedIndex()];
+                Result r = SearchTask.results[9-resultsList.getSelectedIndex()];
                 writer.write(
                         String.format("Result #%1$d (%2$+4.5g): %n%3$s;%n", resultsList.getSelectedIndex(), r.score(), Result.toString(r.config(), ",\n"))
                 );
@@ -1018,8 +1018,8 @@ public final class GUI {
     }
     static void constructDisplay() {
         model.clear();
-        for (int i = 1; i <= Main.results.length; ++i) {
-            model.addElement(String.format("%1$s #%2$d (%3$+5.4g)", get("exp.result"), i, Main.results[10-i].score()));
+        for (int i = 1; i <= SearchTask.results.length; ++i) {
+            model.addElement(String.format("%1$s #%2$d (%3$+5.4g)", get("exp.result"), i, SearchTask.results[10-i].score()));
         }
         resultsList.setSelectedIndex(0);
     }

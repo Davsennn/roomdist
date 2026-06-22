@@ -19,6 +19,6 @@ public record PersonPair(Person a, Person b) implements Comparable<PersonPair> {
 
     @Override
     public int hashCode() {
-        return 31 * a.hashCode() + b.hashCode();
+        return a.hashCode() + b.hashCode();
     }
 }

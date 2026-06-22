@@ -5,7 +5,7 @@ import me.davsennn.Config;
 import java.time.YearMonth;
 import java.util.*;
 
-@SuppressWarnings("unused")
+// @SuppressWarnings("unused")
 public class Person implements Comparable<Person> {
     // static methods
     public static final int now = YearMonth.now().getYear()*12 + YearMonth.now().getMonthValue();
@@ -17,7 +17,10 @@ public class Person implements Comparable<Person> {
     public static LinkedHashMap<PersonPair, Double> custom_bonuses;
     public static boolean use_custom_bonuses;
 
-    public static boolean[][] preferenceMatrix;
+    private static boolean[][] preferenceMatrix;
+    private static double[] unfulfilledPreferencePenalties;
+    private static double[][] directedPairScores;
+    private static double[][] symmetricPairScores;
 
     private static Config.PortableConfig config = new Config.PortableConfig();
 
@@ -28,7 +31,7 @@ public class Person implements Comparable<Person> {
 
     public static Person[] getPeopleSorted() {
         Person[] ret = people.toArray(new Person[0]);
-        Arrays.sort(ret);
+        Arrays.sort(ret, Person::compareId);
         return ret;
     }
 
@@ -60,7 +63,7 @@ public class Person implements Comparable<Person> {
     public static void clearPeople() {
         Person.people.clear();
         Person.locationMap.clear();
-        id_index = Short.MIN_VALUE;
+        id_index = 0;
     }
 
     public static Person fromName(String name) {
@@ -134,20 +137,39 @@ public class Person implements Comparable<Person> {
         return getName().compareTo(other.getName());
     }
 
-    public Person(String name, YearMonth birth, String location, char gender, List<Person> preferences, char group) {
-        Optional<Short> idx = locationMap.keySet().stream().max(Short::compareTo);
-        short nextKey = idx.map(aShort -> (short) (aShort + 1)).orElse(Short.MIN_VALUE);
-        if (nextKey == Short.MAX_VALUE) throw new IndexOutOfBoundsException(nextKey + " is out of bounds for location code");
-        locationMap.put(nextKey, location);
+    public int compareId(Person other) {
+        return id - other.id;
+    }
 
+    private static short getOrCreateLocationKey(String location) {
+        for (Map.Entry<Short, String> entry : locationMap.entrySet()) {
+            if (Objects.equals(entry.getValue(), location)) {
+                return entry.getKey();
+            }
+        }
+
+        short nextKey = locationMap.keySet().stream()
+                .max(Short::compareTo)
+                .map(maxKey -> {
+                    if (maxKey == Short.MAX_VALUE) {
+                        throw new IndexOutOfBoundsException(maxKey + " is out of bounds for location code");
+                    }
+                    return (short) (maxKey + 1);
+                })
+                .orElse((short) 0);
+        locationMap.put(nextKey, location);
+        return nextKey;
+    }
+
+    public Person(String name, YearMonth birth, String location, char gender, List<Person> preferences, char group) {
+        this.location = getOrCreateLocationKey(location);
         this.id = id_index++;
         this.name = name;
         this.birthMonth = birth.getYear()*12 + birth.getMonthValue() - 1;
-        this.location = nextKey;
         this.gender = gender;
         this.preferences = preferences;
         this.group = group;
-        people.add(this);
+        people.add(this.id, this);
     }
 
     public int ageDiffMonths(int other) {
@@ -160,6 +182,64 @@ public class Person implements Comparable<Person> {
 
     public static boolean prefers(Person a, Person b) {
         return preferenceMatrix[a.getId()][b.getId()];
+    }
+
+    public static void prepareScoring() {
+        unfulfilledPreferencePenalties = new double[id_index];
+        directedPairScores = new double[id_index][id_index];
+        symmetricPairScores = new double[id_index][id_index];
+        preferenceMatrix = new boolean[id_index][id_index];
+
+        for (Person p : people) {
+            int pId = p.getId();
+            unfulfilledPreferencePenalties[pId] = p.getPreferences().size() * config.UNFULFILLED_PREFERENCE_PENALTY();
+            directedPairScores[pId][pId] = Double.NEGATIVE_INFINITY;
+
+            for (Person q : people) {
+                int qId = q.getId();
+                if (p == q) continue;
+
+                preferenceMatrix[p.getId()][q.getId()] = p.prefers(q);
+
+                double score = 0.0;
+
+                if (use_custom_bonuses && !custom_bonuses.isEmpty()) {
+                    Double customScore = custom_bonuses.get(new PersonPair(p, q));
+                    if (customScore != null) {
+                        if (customScore == Double.NEGATIVE_INFINITY) {
+                            directedPairScores[pId][qId] = Double.NEGATIVE_INFINITY;
+                            continue;
+                        }
+                        score += customScore / 2;
+                    }
+                }
+
+                int ageDiff = p.ageDiffMonths(q.getBirthMonth());
+                if (p.getLocationCode() == q.getLocationCode()) score += config.SAME_LOCATION_BONUS();
+                if (p.getGender() == q.getGender())             score += config.SAME_GENDER_BONUS();
+                if (ageDiff >= config.AGE_DIFFERENCE_THRESHOLD())         { score -= ageDiff * config.AGE_DIFFERENCE_PENALTY();
+                if (ageDiff >= config.LARGE_AGE_DIFFERENCE_THRESHOLD())     score -= ageDiff * config.LARGE_AGE_DIFFERENCE_PENALTY(); }
+
+                boolean pref = preferenceMatrix[pId][qId];
+                if (pref) {
+                    score += preferenceMatrix[qId][pId] ?
+                            config.MUTUAL_PREFERENCE_BONUS() :
+                            config.PREFERENCE_BONUS();
+                } else {
+                    score -= config.NON_PREFERENCE_PENALTY();
+                }
+                directedPairScores[pId][qId] = score;
+            }
+        }
+
+        for (int i = 0; i < id_index; i++) {
+            for (int j = 0; j < id_index; j++) {
+                double score = directedPairScores[i][j]
+                             + directedPairScores[j][i];
+                symmetricPairScores[i][j] = score;
+                symmetricPairScores[j][i] = score;
+            }
+        }
     }
 
     @Override
@@ -186,51 +266,45 @@ public class Person implements Comparable<Person> {
         if (ppl == null || ppl.size() < 2)
             return 0;
 
-        if (ppl.size() >= Room.getMaxCapacity())
+        if (ppl.size() > Room.getMaxCapacity() + 1)
             return Double.NEGATIVE_INFINITY;
 
         double score = 0.0;
+
         boolean applyLargeGroupBonus = true;
 
-        for (Person p : ppl) {
-            int noPreferences = p.getPreferences().size();
+        for (int i = 0; i < ppl.size(); ++i) {
+            Person p = ppl.get(i);
+            int pId = p.getId();
+            score -= unfulfilledPreferencePenalties[pId];
+            if (p.ageDiffMonths(now) > config.LARGE_GROUP_AGE_LIMIT()) applyLargeGroupBonus = false;
 
-            for (Person q : ppl) {
-                if (p.equals(q)) continue;
-                //if (p.getGroup() != q.getGroup()) return Double.NEGATIVE_INFINITY;
+            for (int j = 0; j < ppl.size(); ++j) {
+                if (i == j) continue;
+                Person q = ppl.get(j);
+                int qId = q.getId();
+                double pairScore = directedPairScores[pId][qId];
+                if (pairScore == Double.NEGATIVE_INFINITY)
+                    return Double.NEGATIVE_INFINITY;
 
-                if (use_custom_bonuses) {
-                    PersonPair pq = new PersonPair(p, q);
-                    if (custom_bonuses.containsKey(pq)) {
-                        double customScore = custom_bonuses.get(pq);
-                        if (customScore == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
-                        else score += customScore / 2;
-                    }
-                }
-
-                boolean pref = Person.prefers(p, q);
-                if (pref) --noPreferences;
-
-                //int ageDiff = p.ageDiffMonths(q.getBirthMonth());
-
-                if (pref)                                       score += Person.prefers(q, p) ?
-                                                                         config.MUTUAL_PREFERENCE_BONUS() :
-                                                                         config.PREFERENCE_BONUS();
-                else                                            score -= config.NON_PREFERENCE_PENALTY();
-                //if (p.getLocationCode() == q.getLocationCode()) score += config.SAME_LOCATION_BONUS();
-                //if (p.getGender() == q.getGender())             score += config.SAME_GENDER_BONUS();
-                //if (ageDiff >= config.AGE_DIFFERENCE_THRESHOLD())         { score -= ageDiff * config.AGE_DIFFERENCE_PENALTY();
-                //if (ageDiff >= config.LARGE_AGE_DIFFERENCE_THRESHOLD())     score -= ageDiff * config.LARGE_AGE_DIFFERENCE_PENALTY(); }
+                score += pairScore;
+                if (preferenceMatrix[pId][qId])
+                    score += config.UNFULFILLED_PREFERENCE_PENALTY();
             }
-
-            //if (p.ageDiffMonths(now) > config.LARGE_GROUP_AGE_LIMIT()) applyLargeGroupBonus = false;
-
-            score -= noPreferences * config.UNFULFILLED_PREFERENCE_PENALTY(); // Penalize for unfulfilled preferences
         }
-        //if (applyLargeGroupBonus && ppl.size() <= config.LARGE_GROUP_SIZE_THRESHOLD())
-        //    score += config.LARGE_GROUP_BONUS() * ppl.size();
+        if (applyLargeGroupBonus && ppl.size() <= config.LARGE_GROUP_SIZE_THRESHOLD())
+            score += config.LARGE_GROUP_BONUS() * ppl.size();
 
         score /= (ppl.size() - 1); // Normalize score by number of comparisons
+        return score;
+    }
+
+    public static double branchOrderScore(List<Person> group, Person candidate) {
+        double score = 0;
+
+        for (Person p : group)
+            score += symmetricPairScores[candidate.getId()][p.getId()];
+
         return score;
     }
 
