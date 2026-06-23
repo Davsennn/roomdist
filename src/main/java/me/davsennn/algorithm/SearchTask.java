@@ -134,7 +134,7 @@ public record SearchTask(
     private static int[] maxPeopleByRoom;
     private static double[] maxFutureScoreByRoom;
 
-    private static void init() throws SizeLimitExceededException {
+    public static void init() throws SizeLimitExceededException {
         startTime = System.nanoTime();
         processed.reset();
         pruned.reset();
@@ -236,6 +236,7 @@ public record SearchTask(
 
     private record Candidate(int index, double score) {}
 
+    @Deprecated
     private static void buildGroup(int roomIdx,
                                    int room,
                                    List<Person> remaining,
