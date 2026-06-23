@@ -390,7 +390,7 @@ public final class GUI {
         });
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
-            File file = new File(ROOT + "\\src\\main\\resources\\halfshuffledpeople.csv");
+            File file = new File(ROOT + "\\src\\test\\resources\\halfshuffledpeople.csv");
             List<Person> people = FileIO.parsePeople(file);
             Collections.shuffle(people);
             Person.addPeople(people);
@@ -756,7 +756,7 @@ public final class GUI {
         });
         JButton test = new JButton(get("button.test"));
         test.addActionListener(ignored -> {
-            File file = new File(ROOT + "\\src\\main\\resources\\rooms.csv");
+            File file = new File(ROOT + "\\src\\test\\resources\\rooms.csv");
             Room.addRooms(FileIO.parseRooms(file));
             fireRoomsChange();
         });
