@@ -303,7 +303,7 @@ public class Person implements Comparable<Person> {
     }
 
     public static double branchOrderScore(List<Person> group, Person candidate) {
-        double score = 0;
+        double score = 0.0;
 
         for (Person p : group)
             score += symmetricPairScores[candidate.getId()][p.getId()];
